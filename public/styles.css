@@ -1,0 +1,103 @@
+/* Återställ standardmarginaler och fyllningar */
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%; /* Gör hela sidan tillgänglig för layouten */
+}
+
+/* Container för rubriken */
+h1 {
+  text-align: center; /* Centrera texten */
+  font-size: 3em; /* Gör textstorleken dubbelt så stor som standard */
+}
+
+/* Container för kartan och checkboxlistan */
+.container {
+  display: flex; /* Använd flexbox för att anpassa layouten */
+  justify-content: center;
+  align-items: flex-start;
+  width: 80%; /* Begränsa bredden för container */
+  height: 75vh; /* Gör container hög nog för att fylla hela sidan */
+  margin: auto; /* Centrera container på sidan */
+  padding-top: 20px; /* Lägg till lite padding överst */
+  padding-bottom: 20px; /* Lägg till lite padding under */
+}
+
+/* CSS för att styla kartbehållaren */
+#mapContainer {
+  width: 35%; /* Bredden för kartbehållaren */
+  height: 100%; /* Ge full höjd till kartbehållaren */
+  border: 1px solid #000; /* Lägg till en kantlinje runt kartan */
+  margin-right: 20px; /* Lite marginal till höger för att separera från checkboxlistan */
+  display: flex; /* Använd flexbox för att centrera kartan */
+  overflow: hidden; /* Dölj eventuellt överskottsinnehåll vid zoom och panorering */
+  cursor: grab; /* Ändra muspekaren till en hand när användaren håller över kartan */
+}
+
+/* Ändra muspekaren till en hand som pekar när användaren klickar och drar */
+#mapContainer:active {
+  cursor: grabbing;
+}
+
+/* CSS för att styla SVG-kartan */
+#sverigeMap {
+  width: 100%; /* Fyll bredden av kartan */
+  height: auto; /* Använd automatisk höjd för kartan */
+  transition: transform 0.3s ease; /* Gör övergången mjuk vid zoom och panorering */
+  transform-origin: center center; /* Sätt transform-origin till mitten av kartan */
+}
+
+/* Stil för checkbox-listan */
+#checkbox-list {
+  width: 65%; /* Bredden för checkbox-listan */
+  max-height: 100%; /* Begränsa höjden på listan för att passa brevid kartan */
+  overflow-y: auto; /* Lägg till rullningsfält om listan är för lång */
+  column-count: 3; /* Dela checkboxlistan i tre kolumner */
+  column-fill: auto; /* Styr fyllningsordningen i kolumnerna */
+  background-color: #f0f0f0; /* Lägg till bakgrundsfärg för att kontrollera synlighet */
+  border: 1px solid #000; /* Lägg till en kantlinje för att kontrollera synlighet */
+  display: flex; /* Använd flexbox för att styra layouten */
+  flex-wrap: wrap; /* Låt elementen wrap när de inte får plats i kolumnen */
+}
+
+
+/* Stil för varje listitem (li) */
+#checkbox-list label {
+  margin-bottom: 5px;
+  display: flex; /* Använd flexbox för att styra layouten */
+  align-items: center; /* Centrera innehållet vertikalt */
+  width: calc(100% / 6); /* Bredden för varje kolumn (delad i tre kolumner) */
+}
+
+/* Stil för exportknappen */
+button {
+  margin-top: 20px; /* Lägg till lite marginal ovanför knappen */
+  margin-bottom: 20px; /* Lägg till lite marginal under knappen */
+  padding: 10px 20px; /* Lägg till fyllning för knappen */
+  font-size: 16px; /* Justera textstorleken */
+  
+}
+
+
+.state-buttons-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.state-buttons-container button {
+  margin: 5px;
+}
+
+
+button:hover {
+  background-color: #45a049; /* Ändra bakgrundsfärgen när man håller över knappen */
+}
+
+
+/* Stil för zoom-knappar */
+.zoom-button {
+  margin-top: 10px; /* Lägg till lite marginal över knapparna */
+  width: auto; /* Använd automatisk bredd för zoom-knapparna */
+}
