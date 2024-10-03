@@ -136,6 +136,41 @@ function loadState(stateName) {
     alert(`State '${stateName}' has been loaded!`);
 }
 
+// Funktion för att ladda flera tillstånd och kombinera dem
+function loadMultipleStates(stateNames) {
+    let combinedCheckboxState = {};
+
+    // Iterera genom varje stateName och kombinera checkbox-tillstånden
+    stateNames.forEach(stateName => {
+        const savedCheckboxState = JSON.parse(localStorage.getItem(stateName)) || {};
+        // Slå ihop checkbox-tillstånd (True om någon av tillstånden är true)
+        Object.keys(savedCheckboxState).forEach(kommunKod => {
+            combinedCheckboxState[kommunKod] = combinedCheckboxState[kommunKod] || savedCheckboxState[kommunKod];
+        });
+    });
+
+    // Applicera det kombinerade tillståndet på alla checkboxar
+    const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = combinedCheckboxState[checkbox.id] || false;
+        // Uppdatera färgen på kommunerna baserat på checkbox-tillstånd
+        const event = new Event('change');
+        checkbox.dispatchEvent(event);
+    });
+
+    alert(`All states have been loaded and applied!`);
+}
+
+// Använd funktionen genom att specificera vilka tillstånd som ska laddas
+const stateNames = ['state1', 'state2', 'state3']; // Lägg till dina sparade tillståndsnamn här
+loadMultipleStates(stateNames);
+
+
+// Event listener för att ladda flera tillstånd när knappen klickas
+document.getElementById('load-all-states-btn').addEventListener('click', function() {
+    loadMultipleStates(['state1', 'state2', 'state3']);
+});
+
 
 // ZOOM-FUNKTONER
 
