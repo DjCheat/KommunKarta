@@ -162,14 +162,15 @@ function loadMultipleStates(stateNames) {
 }
 
 // Använd funktionen genom att specificera vilka tillstånd som ska laddas
-const stateNames = ['state1', 'state2', 'state3']; // Lägg till dina sparade tillståndsnamn här
+const stateNames = ['Vision', 'Future', 'Mobile'];
 loadMultipleStates(stateNames);
 
 
 // Event listener för att ladda flera tillstånd när knappen klickas
 document.getElementById('load-all-states-btn').addEventListener('click', function() {
-    loadMultipleStates(['state1', 'state2', 'state3']);
+    loadMultipleStates(['Vision', 'Future', 'Mobile']);
 });
+
 
 
 // ZOOM-FUNKTONER
