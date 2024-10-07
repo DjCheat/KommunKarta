@@ -61,7 +61,7 @@ fetch('kommuner.json')
     })
     .catch(error => console.error('Error fetching JSON file:', error));
 
-
+/*
 // Funktion för att ändra färg på kommun baserat på checkboxstatus
 function toggleKommunColor(event) {
     const kommunKod = event.target.value;
@@ -74,7 +74,37 @@ function toggleKommunColor(event) {
         kommun.style.fill = '#ccc'; // Återställ färgen till standard
     }
 }
+*/
 
+
+// Funktion för att ändra färg på kommun baserat på checkboxstatus
+function toggleKommunColor(event) {
+    const kommunKod = event.target.value;
+
+    // Hämta alla element med kommunens ID (det kan vara enskilda element eller grupperade element)
+    const kommuner = document.querySelectorAll(`[id="${kommunKod}"]`);
+
+    kommuner.forEach(kommun => {
+        if (kommun.tagName === 'g') {
+            // Om elementet är en grupp (g), hämta alla polygoner inuti och applicera färg
+            const polygons = kommun.querySelectorAll('polygon, path'); // För att inkludera både polygoner och paths
+            polygons.forEach(polygon => {
+                if (event.target.checked) {
+                    polygon.style.fill = '#138943'; // Ändra färgen på markerade polygoner
+                } else {
+                    polygon.style.fill = '#ccc'; // Återställ färgen till standard
+                }
+            });
+        } else {
+            // Om det är ett enskilt polygon-element, ändra dess färg direkt
+            if (event.target.checked) {
+                kommun.style.fill = '#138943';
+            } else {
+                kommun.style.fill = '#ccc';
+            }
+        }
+    });
+}
 
 
 // Funktion för att avmarkera alla checkboxar och återställa färgen på alla kommuner
