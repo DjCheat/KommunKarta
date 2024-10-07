@@ -110,16 +110,24 @@ function toggleKommunColor(event) {
 // Funktion för att avmarkera alla checkboxar och återställa färgen på alla kommuner
 function uncheckAllCheckboxes() {
     const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
+    
     checkboxes.forEach(checkbox => {
         checkbox.checked = false;
-        // Återställ färgen på kommunen till grå
-        const kommun = document.getElementById(checkbox.value);
-        if (kommun) {
+
+        // Hämta kommunens element, både individuella polygoner och grupper
+        let kommun = document.getElementById(checkbox.value);
+        
+        // Om kommunen är en grupp (<g>), återställ färgen för alla dess barn
+        if (kommun && kommun.tagName.toLowerCase() === 'g') {
+            const polygons = kommun.querySelectorAll('polygon');
+            polygons.forEach(polygon => {
+                polygon.style.fill = '#ccc'; // Återställ färgen till grå
+            });
+        } else if (kommun) {
+            // Om det inte är en grupp, återställ färgen för det enskilda objektet
             kommun.style.fill = '#ccc';
         }
     });
-
-
 }
 
 // Funktion för att markera alla checkboxar och ändra färgen på alla kommuner
