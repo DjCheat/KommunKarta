@@ -380,3 +380,21 @@ function exportMap() {
     }, 100);
 }
 
+
+// Funktion för detaljer
+function showKommunDetails(kommunId) {
+    const kommunData = data[kommunId]; // Hämta detaljer från JSON-filen
+    const infoBox = document.getElementById('infoBox');
+    infoBox.innerHTML = `
+        <h3>${kommunData.name}</h3>
+        <p>Befolkning: ${kommunData.population}</p>
+        <p>Yta: ${kommunData.area} km²</p>
+    `;
+    infoBox.style.display = 'block';
+}
+
+document.querySelectorAll('polygon, g').forEach(kommun => {
+    kommun.addEventListener('click', (event) => {
+        showKommunDetails(event.target.id);
+    });
+});
