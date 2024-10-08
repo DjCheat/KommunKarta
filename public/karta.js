@@ -379,3 +379,73 @@ function exportMap() {
         updateTransform();
     }, 100);
 }
+
+// Fånga färgvalsknappen och återställningsknappen
+const colorPickerBtn = document.getElementById('color-picker-btn');
+const resetColorBtn = document.getElementById('reset-color-btn');
+const colorPicker = document.getElementById('color-picker');
+
+// Håll reda på vald färg
+let selectedColor = '#138943'; // Standardfärgen om ingen annan färg valts
+
+// Event listener för färgvalsknappen
+colorPickerBtn.addEventListener('click', () => {
+    colorPicker.click(); // Öppna färgväljaren
+});
+
+// Event listener för färgväljaren
+colorPicker.addEventListener('input', (event) => {
+    selectedColor = event.target.value; // Spara den valda färgen
+    changeAllKommunerColor(selectedColor); // Ändra färgen på alla kommuner
+});
+
+// Funktion för att ändra färgen på alla kommuner
+function changeAllKommunerColor(color) {
+    const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
+
+    checkboxes.forEach(checkbox => {
+        let kommun = document.getElementById(checkbox.value);
+
+        if (kommun) {
+            if (kommun.tagName.toLowerCase() === 'g') {
+                // Ändra färgen på hela gruppen och alla polygoner inom den
+                kommun.style.fill = color;
+                const polygons = kommun.querySelectorAll('polygon');
+                polygons.forEach(polygon => {
+                    polygon.style.fill = color;
+                });
+            } else {
+                // Ändra färgen på enskilda polygoner
+                kommun.style.fill = color;
+            }
+        }
+    });
+}
+
+// Event listener för återställningsknappen
+resetColorBtn.addEventListener('click', () => {
+    resetAllKommunerColor(); // Återställ färgen till standard
+});
+
+// Funktion för att återställa alla kommuner till standardfärgen (grå)
+function resetAllKommunerColor() {
+    const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
+
+    checkboxes.forEach(checkbox => {
+        let kommun = document.getElementById(checkbox.value);
+
+        if (kommun) {
+            if (kommun.tagName.toLowerCase() === 'g') {
+                // Återställ färgen på hela gruppen och alla polygoner inom den
+                kommun.style.fill = '#ccc';
+                const polygons = kommun.querySelectorAll('polygon');
+                polygons.forEach(polygon => {
+                    polygon.style.fill = '#ccc';
+                });
+            } else {
+                // Återställ färgen på enskilda polygoner
+                kommun.style.fill = '#ccc';
+            }
+        }
+    });
+}
