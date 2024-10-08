@@ -427,7 +427,7 @@ resetColorBtn.addEventListener('click', () => {
     resetAllKommunerColor(); // Återställ färgen till standard
 });
 
-// Funktion för att återställa alla kommuner till standardfärgen (grå)
+// Funktion för att återställa alla kommuner till standardfärgen (grön)
 function resetAllKommunerColor() {
     const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
 
@@ -449,3 +449,42 @@ function resetAllKommunerColor() {
         }
     });
 }
+
+// Funktion för att ändra färg på markerade kommuner
+function changeSelectedColor(newColor) {
+    const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            const kommun = document.getElementById(checkbox.value);
+            if (kommun) {
+                kommun.style.fill = newColor; // Ändra färg på markerade kommuner
+            }
+        }
+    });
+}
+
+// Funktion för att återställa färgen på markerade kommuner till standardfärgen
+function resetSelectedColor() {
+    const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            const kommun = document.getElementById(checkbox.value);
+            if (kommun) {
+                kommun.style.fill = '#138943'; // Standardfärgen för markerade kommuner
+            }
+        }
+    });
+}
+
+// Event listeners för färgändringsknapparna
+document.getElementById('change-color-btn').addEventListener('click', function() {
+    const newColor = prompt("Ange ny färg för markerade kommuner (t.ex. #ff0000):");
+    if (newColor) {
+        changeSelectedColor(newColor);
+    }
+});
+
+document.getElementById('reset-color-btn').addEventListener('click', function() {
+    resetSelectedColor();
+});
+
