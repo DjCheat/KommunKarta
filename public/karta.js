@@ -351,7 +351,14 @@ function exportMap() {
 
         // Skapa en kopia av SVG-elementet
         var svgCopy = svgElement.cloneNode(true);
+        
+        // Hämta bounding box av kartan
+        var bbox = svgElement.getBBox();
 
+        // Sätt viewBox så att det bara omfattar kartan och lite vitt utrymme runtom
+        var padding = 20; // Justera padding efter behov
+        svgCopy.setAttribute("viewBox", (bbox.x - padding) + " " + (bbox.y - padding) + " " + (bbox.width + 2 * padding) + " " + (bbox.height + 2 * padding));
+        
         // Skapa en SVG-sträng från kopian av SVG-elementet
         var svgString = new XMLSerializer().serializeToString(svgCopy);
 
@@ -379,3 +386,4 @@ function exportMap() {
         updateTransform();
     }, 100);
 }
+
