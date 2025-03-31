@@ -386,7 +386,7 @@ function exportMap() {
         updateTransform();
     }, 100);
 
-*// Funktion för att uppdatera procentandelen markerade kommuner
+// Funktion för att uppdatera procentandelen markerade kommuner
 function updateSelectedPercentage() {
     const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
     const totalCheckboxes = checkboxes.length;
