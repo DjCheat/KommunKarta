@@ -386,6 +386,18 @@ function exportMap() {
         updateTransform();
     }, 100);
 
+// Lägg till en EventListener för att uppdatera procentandelen när en checkbox ändras
+checkboxList.addEventListener('change', updateSelectedPercentage);
+
+// Skapa ett nytt element för att visa procentandelen
+const percentageDisplay = document.createElement('div');
+percentageDisplay.id = 'percentage-display';
+percentageDisplay.style.marginTop = '10px';
+checkboxList.parentNode.insertBefore(percentageDisplay, checkboxList.nextSibling);
+
+// Uppdatera procentandelen när sidan laddas
+updateSelectedPercentage();
+
 // Funktion för att uppdatera procentandelen markerade kommuner
 function updateSelectedPercentage() {
     const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
@@ -402,23 +414,36 @@ function updateSelectedPercentage() {
     percentageDisplay.textContent = `Valda kommuner: ${percentage.toFixed(2)}%`;
 }
 
-// Lägg till en EventListener för att uppdatera procentandelen när en checkbox ändras
-checkboxList.addEventListener('change', updateSelectedPercentage);
-
 // Lägg till uppdatering av procentandelen när checkboxarna skapas
-checkbox.addEventListener('change', updateSelectedPercentage);
+function createCheckbox(kommunKod, kommunNamn) {
+    const label = document.createElement('label');
+    label.htmlFor = kommunKod;
+    label.textContent = kommunNamn;
 
-// Uppdatera färgen på kommunerna baserat på checkbox-tillstånd
-const event = new Event('change');
-checkbox.dispatchEvent(event);
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = kommunKod;
+    checkbox.id = kommunKod;
 
-// Skapa ett nytt element för att visa procentandelen
-const percentageDisplay = document.createElement('div');
-percentageDisplay.id = 'percentage-display';
-percentageDisplay.style.marginTop = '10px';
-checkboxList.parentNode.insertBefore(percentageDisplay, checkboxList.nextSibling);
+    // Lägg till eventlyssnare för varje checkbox
+    checkbox.addEventListener('change', function(event) {
+        console.log('Checkbox changed:', event.target.id, event.target.checked);
+        toggleKommunColor(event);
+        updateSelectedPercentage();
+    });
 
-// Uppdatera procentandelen när sidan laddas
-updateSelectedPercentage();
+    label.appendChild(checkbox);
+    checkboxList.appendChild(label);
+
+    // Uppdatera färgen på kommunerna baserat på checkbox-tillstånd
+    const event = new Event('change');
+    checkbox.dispatchEvent(event);
+}
+
+// När checkboxarna skapas, anropa createCheckbox för att lägga till eventlyssnare
+kommunKoder.forEach(kommunKod => {
+    const kommunNamn = data[kommunKod];
+    createCheckbox(kommunKod, kommunNamn);
+});
     
 }
