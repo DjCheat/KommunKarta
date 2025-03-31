@@ -443,18 +443,6 @@ function exportMap() {
     }, 100);
 }
 
-// Funktion för att uppdatera procentandelen markerade kommuner
-function updateSelectedPercentage() {
-    const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
-    const totalCheckboxes = checkboxes.length;
-    const checkedCheckboxes = Array.from(checkboxes).filter(checkbox => checkbox.checked).length;
-    const percentage = (checkedCheckboxes / totalCheckboxes) * 100;
-
-    // Visa procentandelen i ett nytt element
-    const percentageDisplay = document.getElementById('percentage-display');
-    percentageDisplay.textContent = `Valda kommuner: ${percentage.toFixed(2)}%`;
-}
-
 // Lägg till en EventListener för att uppdatera procentandelen när en checkbox ändras
 checkboxList.addEventListener('change', updateSelectedPercentage);
 
@@ -466,6 +454,17 @@ checkboxList.parentNode.insertBefore(percentageDisplay, checkboxList.nextSibling
 
 // Uppdatera procentandelen när sidan laddas
 updateSelectedPercentage();
+
+// Funktion för att uppdatera procentandelen markerade kommuner
+function updateSelectedPercentage() {
+    const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
+    const totalCheckboxes = checkboxes.length;
+    const checkedCheckboxes = Array.from(checkboxes).filter(checkbox => checkbox.checked).length;
+    const percentage = (checkedCheckboxes / totalCheckboxes) * 100;
+
+    // Visa procentandelen i elementet
+    percentageDisplay.textContent = `Valda kommuner: ${percentage.toFixed(2)}%`;
+}
 
 }
 
