@@ -3,53 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Interactive map of Sweden's municipalities">
-    <meta name="author" content="DjCheat">
     <title>Sverigekarta</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <header>
-        <h1>Sveriges kommuner</h1>
-    </header>
 
-    <main>
+    <h1>Sveriges kommuner</h1> <!-- Lägg till en rubrik på sidan -->
 
-        <section>
-            <div id="percentage-display" style="margin-top: 10px;"></div>
-        </section>
+    <!-- Lägg till detta div-element för att visa procentandelen markerade kommuner -->
+     <div id="percentage-display" style="margin-top: 10px;"></div>    
+
+    <div class="state-buttons-container"> <!-- Lägg till en unik klass för den nya containern -->
+        <!-- Knappar för att spara och ladda olika tillstånd -->
+        <button onclick="saveState('Future')" style="background-color: #9FCC3B;">Spara Future</button>
+        <button onclick="saveState('Mobile')" style="background-color: #9FCC3B;">Spara Mobile</button>
+        <button onclick="saveState('Vision')" style="margin-right: 100px; background-color: #9FCC3B;">Spara Vision</button>
+        <button onclick="loadState('Future')" style="background-color: #F2C418;">Ladda Future</button>
+        <button onclick="loadState('Mobile')" style="background-color: #F2C418;">Ladda Mobile</button>
+        <button onclick="loadState('Vision')" style="background-color: #F2C418;">Ladda Vision</button>
+        <button id="load-all-states-btn">Ladda alla produkter</button>
+
+    </div>
+
+    <div class="container"> <!-- Lägg till en container runt kartan och checkbox-listan -->
+        <div id="mapContainer"> <!-- En behållare för att möjliggöra zoom och panorering -->
+
+            <svg id="sweden-map" width="600" height="800">
+                <!-- Lägg till innehållet från kommunKarta.svg här -->
+                <image xlink:href="kommunKarta.svg" width="600" height="800" />
+            </svg>
         
-        <section class="state-buttons-container">
-            <button onclick="saveState('Future')" style="background-color: #9FCC3B;">Spara Future</button>
-            <button onclick="saveState('Mobile')" style="background-color: #9FCC3B;">Spara Mobile</button>
-            <button onclick="saveState('Vision')" style="margin-right: 100px; background-color: #9FCC3B;">Spara Vision</button>
-            <button onclick="loadState('Future')" style="background-color: #F2C418;">Ladda Future</button>
-            <button onclick="loadState('Mobile')" style="background-color: #F2C418;">Ladda Mobile</button>
-            <button onclick="loadState('Vision')" style="background-color: #F2C418;">Ladda Vision</button>
-            <button id="load-all-states-btn">Ladda alla produkter</button>
-        </section>
+        </div> <!-- Stäng div-taggen för mapContainer -->
 
-        <section class="container">
-            <div id="mapContainer">
-                <svg id="sweden-map" width="600" height="800">
-                    <image xlink:href="kommunKarta.svg" width="600" height="800" />
-                </svg>
-            </div>
+        <div id="checkbox-list" >
+            <!-- Checkboxlistan genereras dynamiskt med JavaScript -->
+        </div>
+    </div> <!-- Stäng div-taggen för container -->
 
-            <div id="checkbox-list">
-                <!-- Checkboxlistan genereras dynamiskt med JavaScript -->
-            </div>
-        </section>
+    <div class="state-buttons-container"> <!-- Lägg till en container runt knapparna -->
 
-        <section class="state-buttons-container">
-            <button onclick="zoomIn()" style="margin-right: 10px;">Zooma In</button>
-            <button onclick="zoomOut()" style="margin-right: 100px;">Zooma Ut</button>
-            <button onclick="exportMap()" style="background-color: #9FCC3B;">Exportera som SVG</button>
-            <button onclick="checkAllCheckboxes()" style="margin-left: 100px;">Markera alla</button>
-            <button onclick="uncheckAllCheckboxes()" style="margin-left: 10px;">Avmarkera alla</button>
-        </section>
-    </main>
+    <!-- Knappar för zoom -->
+    <button onclick="zoomIn()" style="margin-right: 10px;">Zooma In</button>
+    <button onclick="zoomOut()" style="margin-right: 100px;">Zooma Ut</button>
+             
+           
+    <!-- Knapp för att exportera kartan som SVG -->
+    <button onclick="exportMap()" style="background-color: #9FCC3B;" >Exportera som SVG</button>
 
+    <!-- Knapp för att markera och avmarkera alla checkboxar -->
+    <button onclick="checkAllCheckboxes()" style="margin-left: 100px;" >Markera alla</button>
+    <button onclick="uncheckAllCheckboxes()" style="margin-left: 10px;">Avmarkera alla</button>
+
+    </div>  
+    
+    
+    
     <script src="karta.js"></script>
+
+        
 </body>
 </html>
