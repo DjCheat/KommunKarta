@@ -101,3 +101,9 @@ button:hover {
   margin-top: 10px; /* Lägg till lite marginal över knapparna */
   width: auto; /* Använd automatisk bredd för zoom-knapparna */
 }
+
+#percentage-display {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+}
