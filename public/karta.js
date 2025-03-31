@@ -466,5 +466,12 @@ function updateSelectedPercentage() {
     percentageDisplay.textContent = `Valda kommuner: ${percentage.toFixed(2)}%`;
 }
 
+// Lägg till uppdatering av procentandelen när checkboxarna skapas
+checkbox.addEventListener('change', updateSelectedPercentage);
+
+// Uppdatera färgen på kommunerna baserat på checkbox-tillstånd
+const event = new Event('change');
+checkbox.dispatchEvent(event);
+
 }
 
