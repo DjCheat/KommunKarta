@@ -269,11 +269,11 @@ document.getElementById("sweden-map").addEventListener("dblclick", function(even
 
 
 // Funktion för att panorera kartan
-/*function panMap(dx, dy) {
+function panMap(dx, dy) {
     offsetX += dx;
     offsetY += dy;
     updateTransform();
-  }*/
+  }
   
   // Variabler för att spara startpositionen vid klick
   var isDragging = false;
@@ -294,13 +294,13 @@ document.getElementById("sweden-map").addEventListener("dblclick", function(even
   // Funktion för att panorera kartan
   function panMap(event) {
     if (isDragging) {
-        const dx = event.clientX - startX;
-        const dy = event.clientY - startY;
-        offsetX = startOffsetX + dx;
-        offsetY = startOffsetY + dy;
-        updateTransform();
+      var dx = event.clientX - startX;
+      var dy = event.clientY - startY;
+      offsetX = startOffsetX + dx;
+      offsetY = startOffsetY + dy;
+      updateTransform();
     }
-}
+  }
   
   // Funktion för att avsluta panorering
   function endPan() {
@@ -341,7 +341,7 @@ function exportMap() {
     var currentOffsetX = offsetX;
     var currentOffsetY = offsetY;
 
-   /* // Återställ kartan till ursprunglig vy
+    // Återställ kartan till ursprunglig vy
     resetView();
 
     // Vänta på att återställningen ska slå igenom
@@ -384,63 +384,18 @@ function exportMap() {
         offsetX = currentOffsetX;
         offsetY = currentOffsetY;
         updateTransform();
-    }, 100); */
-
-
-    // Fix the exportMap function
-function exportMap() {
-    // Save current transformation
-    const currentScale = scale;
-    const currentOffsetX = offsetX;
-    const currentOffsetY = offsetY;
-
-    // Reset the map to its original view
-    resetView();
-
-    // Wait for the reset to take effect
-    setTimeout(function () {
-        // Get the SVG element
-        const svgElement = document.getElementById("sweden-map");
-
-        // Create a copy of the SVG element
-        const svgCopy = svgElement.cloneNode(true);
-
-        // Get the bounding box of the map
-        const bbox = svgElement.getBBox();
-
-        // Set the viewBox to include only the map with some padding
-        const padding = 20; // Adjust padding as needed
-        svgCopy.setAttribute(
-            "viewBox",
-            `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + 2 * padding} ${bbox.height + 2 * padding}`
-        );
-
-        // Create an SVG string from the copy of the SVG element
-        const svgString = new XMLSerializer().serializeToString(svgCopy);
-
-        // Create a Blob with the new SVG string
-        const blob = new Blob([svgString], { type: "image/svg+xml" });
-
-        // Create a URL from the Blob
-        const url = URL.createObjectURL(blob);
-
-        // Create a link to download the SVG file
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "sweden-map.svg";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        // Revoke the URL
-        URL.revokeObjectURL(url);
-
-        // Restore the previous transformation
-        scale = currentScale;
-        offsetX = currentOffsetX;
-        offsetY = currentOffsetY;
-        updateTransform();
     }, 100);
+
+    // Funktion för att uppdatera procentandelen markerade kommuner
+function updateSelectedPercentage() {
+    const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
+    const totalCheckboxes = checkboxes.length;
+    const checkedCheckboxes = Array.from(checkboxes).filter(checkbox => checkbox.checked).length;
+    const percentage = (checkedCheckboxes / totalCheckboxes) * 100;
+
+    // Visa procentandelen i ett nytt element
+    const percentageDisplay = document.getElementById('percentage-display');
+    percentageDisplay.textContent = `Valda kommuner: ${percentage.toFixed(2)}%`;
 }
 
 // Lägg till en EventListener för att uppdatera procentandelen när en checkbox ändras
@@ -454,24 +409,5 @@ checkboxList.parentNode.insertBefore(percentageDisplay, checkboxList.nextSibling
 
 // Uppdatera procentandelen när sidan laddas
 updateSelectedPercentage();
-
-// Funktion för att uppdatera procentandelen markerade kommuner
-function updateSelectedPercentage() {
-    const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
-    const totalCheckboxes = checkboxes.length;
-    const checkedCheckboxes = Array.from(checkboxes).filter(checkbox => checkbox.checked).length;
-    const percentage = (checkedCheckboxes / totalCheckboxes) * 100;
-
-    // Visa procentandelen i elementet
-    percentageDisplay.textContent = `Valda kommuner: ${percentage.toFixed(2)}%`;
+    
 }
-
-// Lägg till uppdatering av procentandelen när checkboxarna skapas
-checkbox.addEventListener('change', updateSelectedPercentage);
-
-// Uppdatera färgen på kommunerna baserat på checkbox-tillstånd
-const event = new Event('change');
-checkbox.dispatchEvent(event);
-
-}
-
