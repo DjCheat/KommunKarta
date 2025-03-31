@@ -387,29 +387,27 @@ function exportMap() {
     }, 100);
 
     
-// Funktion för att markera alla checkboxar och ändra färgen på alla kommuner
-function checkAllCheckboxes() {
+// Funktion för att uppdatera procentandelen markerade kommuner
+function updateSelectedPercentage() {
     const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = true;
-        // Uppdatera färgen på kommunerna när de markeras
-        const event = new Event('change');
-        checkbox.dispatchEvent(event);
-    });
-    // Uppdatera procentsatsen
-    updateSelectedPercentage();
+    const totalCheckboxes = checkboxes.length;
+    const checkedCheckboxes = Array.from(checkboxes).filter(checkbox => checkbox.checked).length;
+    const percentage = (checkedCheckboxes / totalCheckboxes) * 100;
+
+    // Visa procentandelen i ett nytt element
+    const percentageDisplay = document.getElementById('percentage-display');
+    percentageDisplay.textContent = `Valda kommuner: ${percentage.toFixed(2)}%`;
 }
 
-// Funktion för att avmarkera alla checkboxar och återställa färgen på alla kommuner
-function uncheckAllCheckboxes() {
-    const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = false;
-        // Uppdatera färgen på kommunerna när de avmarkeras
-        const event = new Event('change');
-        checkbox.dispatchEvent(event);
-    });
-    // Uppdatera procentsatsen
-    updateSelectedPercentage();
-}
+// Lägg till en EventListener för att uppdatera procentandelen när en checkbox ändras
+checkboxList.addEventListener('change', updateSelectedPercentage);
+
+// Skapa ett nytt element för att visa procentandelen
+const percentageDisplay = document.createElement('div');
+percentageDisplay.id = 'percentage-display';
+percentageDisplay.style.marginTop = '10px';
+checkboxList.parentNode.insertBefore(percentageDisplay, checkboxList.nextSibling);
+
+// Uppdatera procentandelen när sidan laddas
+updateSelectedPercentage();
 
