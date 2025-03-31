@@ -386,29 +386,46 @@ function exportMap() {
         updateTransform();
     }, 100);
 
-    // Funktion för att uppdatera procentandelen markerade kommuner
-function updateSelectedPercentage() {
+    
+// Funktion för att ladda en uppsättning checkbox-tillstånd med ett visst namn
+function loadState(stateName) {
+    const savedCheckboxState = JSON.parse(localStorage.getItem(stateName)) || {};
     const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
-    const totalCheckboxes = checkboxes.length;
-    const checkedCheckboxes = Array.from(checkboxes).filter(checkbox => checkbox.checked).length;
-    const percentage = (checkedCheckboxes / totalCheckboxes) * 100;
-
-    // Visa procentandelen i ett nytt element
-    const percentageDisplay = document.getElementById('percentage-display');
-    percentageDisplay.textContent = `Valda kommuner: ${percentage.toFixed(2)}%`;
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = savedCheckboxState[checkbox.id] || false;
+        // Uppdatera färgen på kommunerna baserat på checkbox-tillstånd
+        const event = new Event('change');
+        checkbox.dispatchEvent(event);
+    });
+    alert(`State '${stateName}' has been loaded!`);
+    // Uppdatera procentsatsen
+    updateSelectedPercentage();
 }
 
-// Lägg till en EventListener för att uppdatera procentandelen när en checkbox ändras
-checkboxList.addEventListener('change', updateSelectedPercentage);
+// Funktion för att ladda flera tillstånd och kombinera dem
+function loadMultipleStates(stateNames) {
+    let combinedCheckboxState = {};
 
-// Skapa ett nytt element för att visa procentandelen
-const percentageDisplay = document.createElement('div');
-percentageDisplay.id = 'percentage-display';
-percentageDisplay.style.marginTop = '10px';
-checkboxList.parentNode.insertBefore(percentageDisplay, checkboxList.nextSibling);
+    // Iterera genom varje stateName och kombinera checkbox-tillstånden
+    stateNames.forEach(stateName => {
+        const savedCheckboxState = JSON.parse(localStorage.getItem(stateName)) || {};
+        // Slå ihop checkbox-tillstånd (True om någon av tillstånden är true)
+        Object.keys(savedCheckboxState).forEach(kommunKod => {
+            combinedCheckboxState[kommunKod] = combinedCheckboxState[kommunKod] || savedCheckboxState[kommunKod];
+        });
+    });
 
-// Uppdatera procentandelen när sidan laddas
-updateSelectedPercentage();
-    
+    // Applicera det kombinerade tillståndet på alla checkboxar
+    const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = combinedCheckboxState[checkbox.id] || false;
+        // Uppdatera färgen på kommunerna baserat på checkbox-tillstånd
+        const event = new Event('change');
+        checkbox.dispatchEvent(event);
+    });
+
+    alert(`All states have been loaded and applied!`);
+    // Uppdatera procentsatsen
+    updateSelectedPercentage();
 }
 
