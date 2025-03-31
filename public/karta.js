@@ -387,44 +387,28 @@ function exportMap() {
     }, 100);
 
     
-// Funktion för att ladda en uppsättning checkbox-tillstånd med ett visst namn
-function loadState(stateName) {
-    const savedCheckboxState = JSON.parse(localStorage.getItem(stateName)) || {};
+// Funktion för att markera alla checkboxar och ändra färgen på alla kommuner
+function checkAllCheckboxes() {
     const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(checkbox => {
-        checkbox.checked = savedCheckboxState[checkbox.id] || false;
-        // Uppdatera färgen på kommunerna baserat på checkbox-tillstånd
+        checkbox.checked = true;
+        // Uppdatera färgen på kommunerna när de markeras
         const event = new Event('change');
         checkbox.dispatchEvent(event);
     });
-    alert(`State '${stateName}' has been loaded!`);
     // Uppdatera procentsatsen
     updateSelectedPercentage();
 }
 
-// Funktion för att ladda flera tillstånd och kombinera dem
-function loadMultipleStates(stateNames) {
-    let combinedCheckboxState = {};
-
-    // Iterera genom varje stateName och kombinera checkbox-tillstånden
-    stateNames.forEach(stateName => {
-        const savedCheckboxState = JSON.parse(localStorage.getItem(stateName)) || {};
-        // Slå ihop checkbox-tillstånd (True om någon av tillstånden är true)
-        Object.keys(savedCheckboxState).forEach(kommunKod => {
-            combinedCheckboxState[kommunKod] = combinedCheckboxState[kommunKod] || savedCheckboxState[kommunKod];
-        });
-    });
-
-    // Applicera det kombinerade tillståndet på alla checkboxar
+// Funktion för att avmarkera alla checkboxar och återställa färgen på alla kommuner
+function uncheckAllCheckboxes() {
     const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(checkbox => {
-        checkbox.checked = combinedCheckboxState[checkbox.id] || false;
-        // Uppdatera färgen på kommunerna baserat på checkbox-tillstånd
+        checkbox.checked = false;
+        // Uppdatera färgen på kommunerna när de avmarkeras
         const event = new Event('change');
         checkbox.dispatchEvent(event);
     });
-
-    alert(`All states have been loaded and applied!`);
     // Uppdatera procentsatsen
     updateSelectedPercentage();
 }
