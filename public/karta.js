@@ -381,11 +381,6 @@ function panMapByCoordinates(dx, dy) {
   
   // Funktion för att börja panorera
   function startPan(event) {
-    // Don't start panning if clicking on zoom controls
-    if (event.target.closest('.zoom-controls')) {
-      return;
-    }
-    
     isDragging = true;
     startX = event.clientX;
     startY = event.clientY;
@@ -425,13 +420,7 @@ function panMapByCoordinates(dx, dy) {
       // Keyboard navigation support
       document.addEventListener("keydown", handleKeyboardNavigation);
       
-      // Prevent zoom controls from triggering pan
-      const zoomControls = document.querySelector('.zoom-controls');
-      if (zoomControls) {
-          zoomControls.addEventListener('mousedown', function(event) {
-              event.stopPropagation(); // Prevent pan from starting when clicking zoom controls
-          });
-      }
+      // Zoom controls are now outside map container, no need for special handling
   });
   
   // Keyboard navigation function

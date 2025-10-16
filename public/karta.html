@@ -24,13 +24,6 @@
 
     <div class="container"> <!-- Lägg till en container runt kartan och checkbox-listan -->
         <div id="mapContainer" tabindex="0" role="application" aria-label="Interaktiv karta över Sveriges kommuner"> <!-- En behållare för att möjliggöra zoom och panorering -->
-            <!-- Zoom controls inside map container -->
-            <div class="zoom-controls">
-                <button class="zoom-btn zoom-in" onclick="zoomIn()" title="Zooma in" aria-label="Zooma in">+</button>
-                <button class="zoom-btn zoom-out" onclick="zoomOut()" title="Zooma ut" aria-label="Zooma ut">−</button>
-                <button class="zoom-btn zoom-reset" onclick="resetView()" title="Återställ zoom" aria-label="Återställ zoom">⌂</button>
-            </div>
-            
             <svg id="sweden-map" width="600" height="800" role="img" aria-label="Karta över Sveriges kommuner">
                 <!-- Lägg till innehållet från kommunKarta.svg här -->
                 <image href="kommunKarta.svg" width="600" height="800" alt="SVG karta över Sveriges kommuner" />
@@ -42,12 +35,16 @@
         </div>
     </div> <!-- Stäng div-taggen för container -->
 
-    <!-- Export button centered below map container -->
-    <div class="export-container">
-        <button onclick="exportMap()" class="export-btn">Exportera som SVG</button>
+    <!-- Zoom controls below the map -->
+    <div class="zoom-controls-container">
+        <button class="zoom-btn zoom-in" onclick="zoomIn()" title="Zooma in" aria-label="Zooma in">+</button>
+        <button class="zoom-btn zoom-out" onclick="zoomOut()" title="Zooma ut" aria-label="Zooma ut">−</button>
+        <button class="zoom-btn zoom-reset" onclick="resetView()" title="Återställ zoom" aria-label="Återställ zoom">⌂</button>
     </div>
 
     <div class="state-buttons-container"> <!-- Lägg till en container runt knapparna -->
+        <!-- Knapp för att exportera kartan som SVG -->
+        <button onclick="exportMap()" class="export-btn">Exportera som SVG</button>
         <!-- Knapp för att markera och avmarkera alla checkboxar -->
         <button onclick="checkAllCheckboxes()" class="margin-left-100">Markera alla</button>
         <button onclick="uncheckAllCheckboxes()" class="margin-left-10">Avmarkera alla</button>
