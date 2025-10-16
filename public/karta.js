@@ -24,6 +24,11 @@ fetch('kommuner.json')
                     return kommunNamnA.localeCompare(kommunNamnB);
                 });
 
+                // Center the map in the container on page load
+                setTimeout(() => {
+                    centerMapInContainer();
+                }, 100);
+
                 // Återställ checkbox-tillstånd från localStorage
                 const savedCheckboxState = JSON.parse(localStorage.getItem('checkboxState')) || {};
 
@@ -309,6 +314,30 @@ function updateTransform() {
     }
 }
 
+// Function to center the map in the container
+function centerMapInContainer() {
+    initializeCache();
+    if (svgMapElement && mapContainerElement) {
+        // Reset any existing transformations
+        scale = 1;
+        offsetX = 0;
+        offsetY = 0;
+        
+        // Get container dimensions
+        const containerRect = mapContainerElement.getBoundingClientRect();
+        const svgRect = svgMapElement.getBoundingClientRect();
+        
+        // Calculate center offsets
+        const centerX = (containerRect.width - svgRect.width) / 2;
+        const centerY = (containerRect.height - svgRect.height) / 2;
+        
+        // Apply centering
+        offsetX = centerX;
+        offsetY = centerY;
+        updateTransform();
+    }
+}
+
 
 // Debounced zoom functions for better performance
 function debouncedZoom(callback) {
@@ -381,6 +410,11 @@ function panMapByCoordinates(dx, dy) {
   
   // Funktion för att börja panorera
   function startPan(event) {
+    // Don't start panning if clicking on zoom controls
+    if (event.target.closest('.zoom-controls')) {
+      return;
+    }
+    
     isDragging = true;
     startX = event.clientX;
     startY = event.clientY;
@@ -420,7 +454,13 @@ function panMapByCoordinates(dx, dy) {
       // Keyboard navigation support
       document.addEventListener("keydown", handleKeyboardNavigation);
       
-      // Zoom controls are now outside map container, no need for special handling
+      // Prevent zoom controls from triggering pan
+      const zoomControls = document.querySelector('.zoom-controls');
+      if (zoomControls) {
+          zoomControls.addEventListener('mousedown', function(event) {
+              event.stopPropagation(); // Prevent pan from starting when clicking zoom controls
+          });
+      }
   });
   
   // Keyboard navigation function
