@@ -42,6 +42,8 @@ fetch('kommuner.json')
                         const label = document.createElement('label');
                         label.htmlFor = kommunKod;
                         label.textContent = kommunNamn;
+                        label.style.cursor = 'pointer'; // Make it clear the label is clickable
+                        label.style.userSelect = 'none'; // Prevent text selection when clicking
 
                         const checkbox = document.createElement('input');
                         checkbox.type = 'checkbox';
@@ -49,7 +51,17 @@ fetch('kommuner.json')
                         checkbox.id = kommunKod;
                         checkbox.addEventListener('change', toggleKommunColor);
 
-                        label.appendChild(checkbox); // Lägg till checkboxen inuti label-elementet
+                        // Add click event to label as backup to ensure it works
+                        label.addEventListener('click', function(event) {
+                            // Only trigger if the click wasn't on the checkbox itself
+                            if (event.target !== checkbox) {
+                                checkbox.checked = !checkbox.checked;
+                                toggleKommunColor({ target: checkbox });
+                            }
+                        });
+
+                        // Insert checkbox before text content for better layout
+                        label.insertBefore(checkbox, label.firstChild);
                         checkboxList.appendChild(label);
 
                         // Uppdatera kommunens färg baserat på checkboxens tillstånd
@@ -369,6 +381,11 @@ function panMapByCoordinates(dx, dy) {
   
   // Funktion för att börja panorera
   function startPan(event) {
+    // Don't start panning if clicking on zoom controls
+    if (event.target.closest('.zoom-controls')) {
+      return;
+    }
+    
     isDragging = true;
     startX = event.clientX;
     startY = event.clientY;
@@ -407,6 +424,14 @@ function panMapByCoordinates(dx, dy) {
       
       // Keyboard navigation support
       document.addEventListener("keydown", handleKeyboardNavigation);
+      
+      // Prevent zoom controls from triggering pan
+      const zoomControls = document.querySelector('.zoom-controls');
+      if (zoomControls) {
+          zoomControls.addEventListener('mousedown', function(event) {
+              event.stopPropagation(); // Prevent pan from starting when clicking zoom controls
+          });
+      }
   });
   
   // Keyboard navigation function
