@@ -123,7 +123,9 @@ h1 {
   background-color: #f0f0f0; /* Lägg till bakgrundsfärg för att kontrollera synlighet */
   border: 1px solid #000; /* Lägg till en kantlinje för att kontrollera synlighet */
   display: flex; /* Använd flexbox för att styra layouten */
+  flex-direction: column; /* Organisera vertikalt först */
   flex-wrap: wrap; /* Låt elementen wrap när de inte får plats i kolumnen */
+  align-content: flex-start; /* Starta från vänster */
 }
 
 
@@ -132,13 +134,14 @@ h1 {
   margin-bottom: 5px;
   display: flex; /* Använd flexbox för att styra layouten */
   align-items: center; /* Centrera innehållet vertikalt */
-  width: calc(100% / 6); /* Bredden för varje kolumn (delad i tre kolumner) */
+  width: 100%; /* Full width for vertical ordering */
   cursor: pointer; /* Make labels clickable */
   padding: 2px;
   user-select: none; /* Prevent text selection when clicking */
   -webkit-user-select: none; /* Safari */
   -moz-user-select: none; /* Firefox */
   -ms-user-select: none; /* IE/Edge */
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 /* Improve checkbox accessibility */

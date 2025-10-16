@@ -454,6 +454,11 @@ function panMapByCoordinates(dx, dy) {
       // Keyboard navigation support
       document.addEventListener("keydown", handleKeyboardNavigation);
       
+      // Scroll wheel zoom support
+      if (mapContainerElement) {
+          mapContainerElement.addEventListener("wheel", handleWheelZoom);
+      }
+      
       // Prevent zoom controls from triggering pan
       const zoomControls = document.querySelector('.zoom-controls');
       if (zoomControls) {
@@ -463,6 +468,29 @@ function panMapByCoordinates(dx, dy) {
       }
   });
   
+  // Wheel zoom function
+  function handleWheelZoom(event) {
+      event.preventDefault(); // Prevent page scrolling
+      
+      const delta = event.deltaY;
+      const zoomSpeed = 0.1; // Adjust zoom sensitivity
+      
+      // Determine zoom direction
+      if (delta < 0) {
+          // Scroll up - zoom in
+          debouncedZoom(() => {
+              scale = Math.min(scale + zoomSpeed, 5); // Limit maximum zoom
+              updateTransform();
+          });
+      } else if (delta > 0) {
+          // Scroll down - zoom out
+          debouncedZoom(() => {
+              scale = Math.max(scale - zoomSpeed, 0.5); // Limit minimum zoom
+              updateTransform();
+          });
+      }
+  }
+
   // Keyboard navigation function
   function handleKeyboardNavigation(event) {
       const key = event.key;
