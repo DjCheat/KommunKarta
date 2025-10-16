@@ -13,37 +13,37 @@
 
     <div class="state-buttons-container"> <!-- Lägg till en unik klass för den nya containern -->
         <!-- Knappar för att spara och ladda olika tillstånd -->
-        <button onclick="saveState('Future')" style="background-color: #9FCC3B;">Spara Future</button>
-        <button onclick="saveState('Mobile')" style="background-color: #9FCC3B;">Spara Mobile</button>
-        <button onclick="saveState('Vision')" style="margin-right: 100px; background-color: #9FCC3B;">Spara Vision</button>
-        <button onclick="loadState('Future')" style="background-color: #F2C418;">Ladda Future</button>
-        <button onclick="loadState('Mobile')" style="background-color: #F2C418;">Ladda Mobile</button>
-        <button onclick="loadState('Vision')" style="background-color: #F2C418;">Ladda Vision</button>
+        <button onclick="saveState('Future')" class="save-btn">Spara Future</button>
+        <button onclick="saveState('Mobile')" class="save-btn">Spara Mobile</button>
+        <button onclick="saveState('Vision')" class="save-btn margin-right-100">Spara Vision</button>
+        <button onclick="loadState('Future')" class="load-btn">Ladda Future</button>
+        <button onclick="loadState('Mobile')" class="load-btn">Ladda Mobile</button>
+        <button onclick="loadState('Vision')" class="load-btn">Ladda Vision</button>
         <button id="load-all-states-btn">Ladda alla produkter</button>
     </div>
 
     <div class="container"> <!-- Lägg till en container runt kartan och checkbox-listan -->
-        <div id="mapContainer"> <!-- En behållare för att möjliggöra zoom och panorering -->
-            <svg id="sweden-map" width="600" height="800">
+        <div id="mapContainer" tabindex="0" role="application" aria-label="Interaktiv karta över Sveriges kommuner"> <!-- En behållare för att möjliggöra zoom och panorering -->
+            <svg id="sweden-map" width="600" height="800" role="img" aria-label="Karta över Sveriges kommuner">
                 <!-- Lägg till innehållet från kommunKarta.svg här -->
-                <image xlink:href="kommunKarta.svg" width="600" height="800" />
+                <image href="kommunKarta.svg" width="600" height="800" alt="SVG karta över Sveriges kommuner" />
             </svg>
         </div> <!-- Stäng div-taggen för mapContainer -->
 
-        <div id="checkbox-list">
+        <div id="checkbox-list" role="list" aria-label="Lista över Sveriges kommuner">
             <!-- Checkboxlistan genereras dynamiskt med JavaScript -->
         </div>
     </div> <!-- Stäng div-taggen för container -->
 
     <div class="state-buttons-container"> <!-- Lägg till en container runt knapparna -->
         <!-- Knappar för zoom -->
-        <button onclick="zoomIn()" style="margin-right: 10px;">Zooma In</button>
-        <button onclick="zoomOut()" style="margin-right: 100px;">Zooma Ut</button>
+        <button onclick="zoomIn()" class="margin-right-10">Zooma In</button>
+        <button onclick="zoomOut()" class="margin-right-100">Zooma Ut</button>
         <!-- Knapp för att exportera kartan som SVG -->
-        <button onclick="exportMap()" style="background-color: #9FCC3B;" >Exportera som SVG</button>
+        <button onclick="exportMap()" class="export-btn">Exportera som SVG</button>
         <!-- Knapp för att markera och avmarkera alla checkboxar -->
-        <button onclick="checkAllCheckboxes()" style="margin-left: 100px;" >Markera alla</button>
-        <button onclick="uncheckAllCheckboxes()" style="margin-left: 10px;">Avmarkera alla</button>
+        <button onclick="checkAllCheckboxes()" class="margin-left-100">Markera alla</button>
+        <button onclick="uncheckAllCheckboxes()" class="margin-left-10">Avmarkera alla</button>
     </div>  
 
     <script src="karta.js"></script>

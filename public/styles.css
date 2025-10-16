@@ -32,6 +32,13 @@ h1 {
   display: flex; /* Använd flexbox för att centrera kartan */
   overflow: hidden; /* Dölj eventuellt överskottsinnehåll vid zoom och panorering */
   cursor: grab; /* Ändra muspekaren till en hand när användaren håller över kartan */
+  outline: none; /* Remove default focus outline */
+}
+
+/* Focus styles for accessibility */
+#mapContainer:focus {
+  outline: 3px solid #007bff;
+  outline-offset: 2px;
 }
 
 /* Ändra muspekaren till en hand som pekar när användaren klickar och drar */
@@ -40,7 +47,7 @@ h1 {
 }
 
 /* CSS för att styla SVG-kartan */
-#sverigeMap {
+#sweden-map {
   width: 100%; /* Fyll bredden av kartan */
   height: auto; /* Använd automatisk höjd för kartan */
   transition: transform 0.3s ease; /* Gör övergången mjuk vid zoom och panorering */
@@ -52,8 +59,6 @@ h1 {
   width: 65%; /* Bredden för checkbox-listan */
   max-height: 100%; /* Begränsa höjden på listan för att passa brevid kartan */
   overflow-y: auto; /* Lägg till rullningsfält om listan är för lång */
-  column-count: 3; /* Dela checkboxlistan i tre kolumner */
-  column-fill: auto; /* Styr fyllningsordningen i kolumnerna */
   background-color: #f0f0f0; /* Lägg till bakgrundsfärg för att kontrollera synlighet */
   border: 1px solid #000; /* Lägg till en kantlinje för att kontrollera synlighet */
   display: flex; /* Använd flexbox för att styra layouten */
@@ -67,6 +72,20 @@ h1 {
   display: flex; /* Använd flexbox för att styra layouten */
   align-items: center; /* Centrera innehållet vertikalt */
   width: calc(100% / 6); /* Bredden för varje kolumn (delad i tre kolumner) */
+  cursor: pointer; /* Make labels clickable */
+  padding: 2px;
+}
+
+/* Improve checkbox accessibility */
+#checkbox-list input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+/* Focus styles for checkboxes */
+#checkbox-list input[type="checkbox"]:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 1px;
 }
 
 /* Stil för exportknappen */
@@ -95,6 +114,39 @@ button:hover {
   background-color: #45a049; /* Ändra bakgrundsfärgen när man håller över knappen */
 }
 
+button:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+/* Button style classes */
+.save-btn {
+  background-color: #9FCC3B !important;
+}
+
+.load-btn {
+  background-color: #F2C418 !important;
+}
+
+.export-btn {
+  background-color: #9FCC3B !important;
+}
+
+.margin-right-10 {
+  margin-right: 10px;
+}
+
+.margin-right-100 {
+  margin-right: 100px;
+}
+
+.margin-left-10 {
+  margin-left: 10px;
+}
+
+.margin-left-100 {
+  margin-left: 100px;
+}
 
 /* Stil för zoom-knappar */
 .zoom-button {
