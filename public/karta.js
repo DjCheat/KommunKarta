@@ -328,45 +328,59 @@ function adjustCheckboxListLayout() {
 
     const rect = mapContainerElement.getBoundingClientRect();
 
-    // Sätt höjd så att listan matchar kartans container
-    checkboxList.style.height = rect.height + 'px';
-    checkboxList.style.overflowX = 'auto'; // Horisontell scroll
-    checkboxList.style.overflowY = 'hidden';
-
-    const approxColWidth = 200; // Justera efter önskat utseende
-    const cols = Math.max(1, Math.floor(rect.width / approxColWidth));
-
-    // Hämta alla labels
+    // Rensa gamla children
     const labels = Array.from(checkboxList.querySelectorAll('label'));
-
-    // Rensa listan
     checkboxList.innerHTML = '';
 
-    // Skapa tomma arrays för varje kolumn
-    const columnArrays = Array.from({ length: cols }, () => []);
+    // Bestäm antal kolumner baserat på containerbredd
+    const approxColWidth = 200; // justera vid behov
+    const cols = Math.max(1, Math.floor(rect.width / approxColWidth));
 
-    // Fyll kolumner vertikalt först
-    labels.forEach((label, index) => {
-        const colIndex = index % cols;
-        columnArrays[colIndex].push(label);
+    // Sortera labels alfabetiskt vertikalt
+    labels.sort((a, b) => {
+        return a.textContent.localeCompare(b.textContent, 'sv', { sensitivity: 'base' });
     });
 
-    // Skapa kolumn-divs och lägg till checkboxar
+    // Beräkna antal rader som behövs för vertikal fyllning
+    const rows = Math.ceil(labels.length / cols);
+
+    // Skapa wrapper för horisontell scroll
     const wrapper = document.createElement('div');
     wrapper.style.display = 'flex';
-    wrapper.style.gap = '12px'; // mellanslag mellan kolumner
+    wrapper.style.gap = '12px';
+    wrapper.style.height = '100%'; 
+    wrapper.style.overflowX = 'auto';
+    wrapper.style.overflowY = 'hidden';
 
-    columnArrays.forEach(column => {
+    // Skapa kolumner och fyll vertikalt först
+    for (let c = 0; c < cols; c++) {
         const colDiv = document.createElement('div');
         colDiv.style.display = 'flex';
         colDiv.style.flexDirection = 'column';
         colDiv.style.gap = '6px';
-        column.forEach(label => colDiv.appendChild(label));
+        colDiv.style.flex = '0 0 auto'; // viktig för horisontell scroll
+
+        for (let r = 0; r < rows; r++) {
+            const index = r + c * rows; // fyll vertikalt först
+            if (labels[index]) {
+                colDiv.appendChild(labels[index]);
+            }
+        }
         wrapper.appendChild(colDiv);
-    });
+    }
 
     checkboxList.appendChild(wrapper);
+
+    // Se till att labels ser bra ut
+    const allLabels = checkboxList.querySelectorAll('label');
+    allLabels.forEach(l => {
+        l.style.display = 'flex';
+        l.style.alignItems = 'center';
+        l.style.gap = '8px';
+        l.style.whiteSpace = 'normal';
+    });
 }
+
 
 
 // Funktion för att uppdatera transformeringen (zoom och panorering)
@@ -732,4 +746,5 @@ function exportMap() {
         alert('Failed to initialize export. Please try again.');
     }
 }
+
 
