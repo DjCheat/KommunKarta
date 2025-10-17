@@ -149,23 +149,60 @@ h1 {
 }
 
 /* Stil för checkbox-listan
-   NOTE: switched from flex-based multi-column to CSS multi-column layout.
-   This makes items flow top-to-bottom into multiple columns, and avoids
-   the large gaps caused by label width:100% with flex-wrap:wrap. */
+   Gör listan horisontellt scrollbar och visa 5 kolumner i synligt fönster.
+   Justera --rows om du vill ändra hur många rader per kolumn som ska visas. */
 #checkbox-list {
-  width: 100%; /* Bredden för checkbox-listan */
-  max-height: 100%; /* Begränsa höjden på listan för att passa brevid kartan */
-  overflow-y: auto; /* Lägg till rullningsfält om listan är för lång */
-  background-color: #f0f0f0; /* Lägg till bakgrundsfärg för att kontrollera synlighet */
-  border: 1px solid #000; /* Lägg till en kantlinje för att kontrollera synlighet */
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;    /* Horisontell rullning */
+  overflow-y: hidden;  /* Ingen vertikal rullning för yttre container */
+  background-color: #f0f0f0;
+  border: 1px solid #000;
   padding: 10px;
   box-sizing: border-box;
 
-  /* Adjust these properties for tighter columns */
-  column-width: 180px;    /* Make columns slightly narrower */
-  column-gap: 2px;        /* Minimal gap between columns */
-  columns: auto;
-  column-fill: auto;
+  display: flex;               /* fem kolumner horisontellt */
+  gap: 12px;
+  align-items: flex-start;
+  /* gör så att kolumnerna kan breda sig horisontellt och skapa scrolling */
+  white-space: nowrap;
+}
+
+/* Varje kolumn innehåller vertikal lista av labels */
+.checkbox-column {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+  height: 100%;
+  box-sizing: border-box;
+  padding-right: 6px;
+  /* Fixed visible width so 5 columns fit the container */
+  min-width: 20%;
+  max-width: 20%;
+  overflow: visible; /* undvik yttre vertikal scroll */
+}
+
+/* Etiketter anpassade för kolumnlayout */
+#checkbox-list label {
+  display: flex;       /* checkbox + text på samma rad */
+  align-items: center;
+  width: 100%;
+  cursor: pointer;
+  padding: 4px 6px;
+  margin: 0;
+  user-select: none;
+  white-space: normal;
+  break-inside: avoid;
+}
+
+/* Se till att scrollbar är horisontell och synlig på alla plattformar */
+#checkbox-list::-webkit-scrollbar {
+  height: 10px;
+}
+#checkbox-list::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.2);
+  border-radius: 6px;
 }
 
 /* Container for checkbox control buttons - centered below list */
