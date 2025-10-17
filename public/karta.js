@@ -473,7 +473,7 @@ function panMapByCoordinates(dx, dy) {
       event.preventDefault(); // Prevent page scrolling
       
       const delta = event.deltaY;
-      const zoomSpeed = 0.1; // Adjust zoom sensitivity
+      const zoomSpeed = 5; // Adjust zoom sensitivity
       
       // Determine zoom direction
       if (delta < 0) {
@@ -485,7 +485,7 @@ function panMapByCoordinates(dx, dy) {
       } else if (delta > 0) {
           // Scroll down - zoom out
           debouncedZoom(() => {
-              scale = Math.max(scale - zoomSpeed, 0.5); // Limit minimum zoom
+              scale = Math.max(scale - zoomSpeed, 5); // Limit minimum zoom
               updateTransform();
           });
       }
@@ -631,3 +631,4 @@ function exportMap() {
         alert('Failed to initialize export. Please try again.');
     }
 }
+
