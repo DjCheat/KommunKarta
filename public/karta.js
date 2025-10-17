@@ -480,9 +480,10 @@ function handleWheelZoom(event) {
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
 
-    // For translate-then-scale ordering: adjust offsets so the pixel under the cursor remains fixed
-    offsetX += mouseX * (1 / newScale - 1 / scale);
-    offsetY += mouseY * (1 / newScale - 1 / scale);
+    // Adjust offsets so the point under the cursor stays fixed during zoom
+    // Formula: new_offset = offset + (mouse_pos - offset) * (1 - new_scale / old_scale)
+    offsetX = offsetX + (mouseX - offsetX) * (1 - newScale / scale);
+    offsetY = offsetY + (mouseY - offsetY) * (1 - newScale / scale);
 
     scale = newScale;
 

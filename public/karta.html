@@ -23,31 +23,38 @@
     </div>
 
     <div class="container"> <!-- Lägg till en container runt kartan och checkbox-listan -->
-        <div id="mapContainer" tabindex="0" role="application" aria-label="Interaktiv karta över Sveriges kommuner"> <!-- En behållare för att möjliggöra zoom och panorering -->
-            <!-- Zoom controls in lower right corner -->
-            <div class="zoom-controls">
-                <button class="zoom-btn zoom-in" onclick="zoomIn()" title="Zooma in" aria-label="Zooma in">+</button>
-                <button class="zoom-btn zoom-out" onclick="zoomOut()" title="Zooma ut" aria-label="Zooma ut">−</button>
+        <div class="map-and-export-wrapper">
+            <div id="mapContainer" tabindex="0" role="application" aria-label="Interaktiv karta över Sveriges kommuner"> <!-- En behållare för att möjliggöra zoom och panorering -->
+                <!-- Zoom controls in lower right corner -->
+                <div class="zoom-controls">
+                    <button class="zoom-btn zoom-in" onclick="zoomIn()" title="Zooma in" aria-label="Zooma in">+</button>
+                    <button class="zoom-btn zoom-out" onclick="zoomOut()" title="Zooma ut" aria-label="Zooma ut">−</button>
+                </div>
+                
+                <svg id="sweden-map" width="600" height="800" role="img" aria-label="Karta över Sveriges kommuner">
+                    <!-- Lägg till innehållet från kommunKarta.svg här -->
+                    <image href="kommunKarta.svg" width="600" height="800" alt="SVG karta över Sveriges kommuner" />
+                </svg>
+            </div> <!-- Stäng div-taggen för mapContainer -->
+            
+            <!-- Export button centered below the map -->
+            <div class="export-btn-container">
+                <button onclick="exportMap()" class="export-btn">Exportera som SVG</button>
+            </div>
+        </div>
+
+        <div class="checkbox-and-controls-wrapper">
+            <div id="checkbox-list" role="list" aria-label="Lista över Sveriges kommuner">
+                <!-- Checkboxlistan genereras dynamiskt med JavaScript -->
             </div>
             
-            <svg id="sweden-map" width="600" height="800" role="img" aria-label="Karta över Sveriges kommuner">
-                <!-- Lägg till innehållet från kommunKarta.svg här -->
-                <image href="kommunKarta.svg" width="600" height="800" alt="SVG karta över Sveriges kommuner" />
-            </svg>
-        </div> <!-- Stäng div-taggen för mapContainer -->
-
-        <div id="checkbox-list" role="list" aria-label="Lista över Sveriges kommuner">
-            <!-- Checkboxlistan genereras dynamiskt med JavaScript -->
+            <!-- Checkbox control buttons centered below the list -->
+            <div class="checkbox-controls-container">
+                <button onclick="checkAllCheckboxes()">Markera alla</button>
+                <button onclick="uncheckAllCheckboxes()">Avmarkera alla</button>
+            </div>
         </div>
     </div> <!-- Stäng div-taggen för container -->
-
-    <div class="state-buttons-container"> <!-- Lägg till en container runt knapparna -->
-        <!-- Knapp för att exportera kartan som SVG -->
-        <button onclick="exportMap()" class="export-btn">Exportera som SVG</button>
-        <!-- Knapp för att markera och avmarkera alla checkboxar -->
-        <button onclick="checkAllCheckboxes()" class="margin-left-100">Markera alla</button>
-        <button onclick="uncheckAllCheckboxes()" class="margin-left-10">Avmarkera alla</button>
-    </div>  
 
     <script src="karta.js"></script>
 </body>
