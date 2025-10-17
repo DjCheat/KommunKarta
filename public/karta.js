@@ -328,26 +328,46 @@ function adjustCheckboxListLayout() {
 
     const rect = mapContainerElement.getBoundingClientRect();
 
-    // Sätt höjd så att listan matchar kartans container och får scrollbar vid behov
+    // Sätt höjd så att listan matchar kartans container
     checkboxList.style.height = rect.height + 'px';
-    checkboxList.style.overflowY = 'auto';
+    checkboxList.style.overflowX = 'auto'; // Horisontell scroll
+    checkboxList.style.overflowY = 'hidden';
 
-    // Responsiv grid – antal kolumner baserat på containerbredd
-    const approxColWidth = 260; // justera efter önskat utseende
+    const approxColWidth = 200; // Justera efter önskat utseende
     const cols = Math.max(1, Math.floor(rect.width / approxColWidth));
-    checkboxList.style.display = 'grid';
-    checkboxList.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
-    checkboxList.style.gap = '6px 12px';
 
-    // Se till att varje label radbryts och har bra inre layout
-    const labels = checkboxList.querySelectorAll('label');
-    labels.forEach(l => {
-        l.style.display = 'flex';
-        l.style.alignItems = 'center';
-        l.style.gap = '8px';
-        l.style.whiteSpace = 'normal';
+    // Hämta alla labels
+    const labels = Array.from(checkboxList.querySelectorAll('label'));
+
+    // Rensa listan
+    checkboxList.innerHTML = '';
+
+    // Skapa tomma arrays för varje kolumn
+    const columnArrays = Array.from({ length: cols }, () => []);
+
+    // Fyll kolumner vertikalt först
+    labels.forEach((label, index) => {
+        const colIndex = index % cols;
+        columnArrays[colIndex].push(label);
     });
+
+    // Skapa kolumn-divs och lägg till checkboxar
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.gap = '12px'; // mellanslag mellan kolumner
+
+    columnArrays.forEach(column => {
+        const colDiv = document.createElement('div');
+        colDiv.style.display = 'flex';
+        colDiv.style.flexDirection = 'column';
+        colDiv.style.gap = '6px';
+        column.forEach(label => colDiv.appendChild(label));
+        wrapper.appendChild(colDiv);
+    });
+
+    checkboxList.appendChild(wrapper);
 }
+
 
 // Funktion för att uppdatera transformeringen (zoom och panorering)
 // NOTE: translate THEN scale ordering keeps pan offsets in unscaled pixels, making math simpler.
@@ -712,3 +732,4 @@ function exportMap() {
         alert('Failed to initialize export. Please try again.');
     }
 }
+
