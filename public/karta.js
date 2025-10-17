@@ -469,27 +469,20 @@ function panMapByCoordinates(dx, dy) {
   });
   
   // Wheel zoom function
-  function handleWheelZoom(event) {
-      event.preventDefault(); // Prevent page scrolling
-      
-      const delta = event.deltaY;
-      const zoomSpeed = 5; // Adjust zoom sensitivity
-      
-      // Determine zoom direction
-      if (delta < 0) {
-          // Scroll up - zoom in
-          debouncedZoom(() => {
-              scale = Math.min(scale + zoomSpeed, 5); // Limit maximum zoom
-              updateTransform();
-          });
-      } else if (delta > 0) {
-          // Scroll down - zoom out
-          debouncedZoom(() => {
-              scale = Math.max(scale - zoomSpeed, 5); // Limit minimum zoom
-              updateTransform();
-          });
-      }
-  }
+function handleWheelZoom(event) {
+    event.preventDefault();
+    const zoomFactor = 1.1;
+
+    if (event.deltaY < 0) {
+        // Zooma in
+        scale = Math.min(scale * zoomFactor, 5);
+    } else {
+        // Zooma ut
+        scale = Math.max(scale / zoomFactor, 0.5);
+    }
+
+    updateTransform();
+}
 
   // Keyboard navigation function
   function handleKeyboardNavigation(event) {
