@@ -160,7 +160,7 @@ h1 {
   border: 1px solid #000;
   padding: 10px;
   box-sizing: border-box;
-
+  flex-direction: column; /* Organisera vertikalt först */
   display: flex;               /* fem kolumner horisontellt */
   gap: 12px;
   align-items: flex-start;
@@ -338,3 +338,4 @@ button:focus {
   margin-top: 10px; /* Lägg till lite marginal över knapparna */
   width: auto; /* Använd automatisk bredd för zoom-knapparna */
 }
+
