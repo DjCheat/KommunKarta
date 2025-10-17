@@ -282,7 +282,7 @@ document.getElementById('load-all-states-btn').addEventListener('click', functio
 
 
 
-// ZOOM-FUNKTONER
+// ZOOM-FUNKTIONER
 
 // Variabler för zoomnivå och position
 let scale = 1;
@@ -631,4 +631,31 @@ function exportMap() {
         alert('Failed to initialize export. Please try again.');
     }
 }
+
+// Add mousewheel zoom event listener
+mapContainer.addEventListener('wheel', function(event) {
+    event.preventDefault();
+    
+    // Get the current scale
+    const currentTransform = window.getComputedStyle(svgMap).getPropertyValue('transform');
+    const matrix = new DOMMatrix(currentTransform);
+    const currentScale = matrix.a;
+    
+    // Calculate new scale with reduced zoom speed
+    const zoomFactor = 0.05; // Reduced from 0.1 for smoother zoom
+    const delta = event.deltaY < 0 ? zoomFactor : -zoomFactor; // Inverted logic for natural zoom direction
+    const newScale = currentScale * (1 + delta);
+    
+    // Limit zoom range
+    if (newScale >= 0.5 && newScale <= 4) {
+        // Get mouse position relative to SVG
+        const rect = svgMap.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+        
+        // Apply zoom transformation
+        svgMap.style.transformOrigin = `${mouseX}px ${mouseY}px`;
+        svgMap.style.transform = `scale(${newScale})`;
+    }
+});
 
