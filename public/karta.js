@@ -641,10 +641,10 @@ mapContainer.addEventListener('wheel', function(event) {
     const matrix = new DOMMatrix(currentTransform);
     const currentScale = matrix.a;
     
-    // Calculate new scale with reduced zoom speed
-    const zoomFactor = 0.05; // Reduced from 0.1 for smoother zoom
-    const delta = event.deltaY < 0 ? zoomFactor : -zoomFactor; // Inverted logic for natural zoom direction
-    const newScale = currentScale * (1 + delta);
+    // Calculate new scale with reduced zoom speed (0.05 for smoother zoom)
+    const zoomFactor = 0.05;
+    // Fix zoom direction - deltaY positive means scroll down (zoom out)
+    const newScale = currentScale * (1 - (event.deltaY * 0.001));
     
     // Limit zoom range
     if (newScale >= 0.5 && newScale <= 4) {

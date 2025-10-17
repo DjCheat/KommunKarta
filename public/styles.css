@@ -133,7 +133,7 @@ h1 {
   box-sizing: border-box;
 
   /* Adjust these properties for tighter columns */
-  column-width: 180px;    /* Make columns slightly narrower */
+  column-width: 80px;    /* Make columns slightly narrower */
   column-gap: 2px;        /* Minimal gap between columns */
   columns: auto;
   column-fill: auto;
