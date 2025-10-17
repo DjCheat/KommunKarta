@@ -123,28 +123,40 @@ h1 {
   background-color: #f0f0f0;
   border: 1px solid #000;
   box-sizing: border-box;
-  overflow: hidden; /* Dölj overflow på yttre containern */
+  padding: 10px;
+  overflow-x: auto;
 }
 
-/* Stilar för scroll-bars */
-#checkbox-list > div::-webkit-scrollbar {
+.checkbox-columns-container {
+  display: grid;
+  grid-auto-flow: column;  /* Flödar horisontellt */
+  grid-template-rows: repeat(auto-fill, 25px); /* Fast höjd per rad */
+  gap: 6px 20px; /* Vertikal och horisontell gap */
+  height: 100%;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  padding: 2px 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Scrollbar styling */
+#checkbox-list::-webkit-scrollbar {
   height: 10px;
 }
 
-#checkbox-list > div::-webkit-scrollbar-thumb {
+#checkbox-list::-webkit-scrollbar-thumb {
   background: rgba(0,0,0,0.2);
   border-radius: 6px;
 }
 
-#checkbox-list > div::-webkit-scrollbar-track {
+#checkbox-list::-webkit-scrollbar-track {
   background: rgba(0,0,0,0.05);
-}
-
-.checkbox-column {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 180px; /* Justera bredden på kolumnen efter behov */
 }
 
 #checkbox-list label {
