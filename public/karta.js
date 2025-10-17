@@ -79,7 +79,6 @@ fetch('kommuner.json')
     .catch(error => console.error('Error fetching JSON file:', error));
 
 
-
 // Funktion för att ändra färg på kommun baserat på checkboxstatus
 function toggleKommunColor(event) {
     const kommunKod = event.target.value;
@@ -107,6 +106,9 @@ function toggleKommunColor(event) {
             }
         }
     });
+
+    // Persist each checkbox change in a simple global state
+    saveCheckboxState(event.target.id, event.target.checked);
 }
 
 
@@ -281,7 +283,6 @@ document.getElementById('load-all-states-btn').addEventListener('click', functio
 });
 
 
-
 // ZOOM-FUNKTIONER
 
 // Variabler för zoomnivå och position
@@ -292,8 +293,11 @@ let offsetY = 0;
 // Performance optimization: Cache DOM elements and add debouncing
 let svgMapElement = null;
 let mapContainerElement = null;
-let zoomTimeout = null;
+let rafId = null;
 
+function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+}
 
 // Initialize cached DOM elements
 function initializeCache() {
@@ -309,6 +313,9 @@ function initializeCache() {
 function updateTransform() {
     initializeCache();
     if (svgMapElement) {
+        // Use translate in pixels and scale, order: translate then scale so translations are not affected by scale
+        // However to preserve existing logic and semantics, we use scale then translate but carefully update offsets accordingly.
+        // Keep the same ordering as before to avoid big visual changes:
         var transformValue = "scale(" + scale + ") translate(" + offsetX + "px, " + offsetY + "px)";
         svgMapElement.style.transform = transformValue;
     }
@@ -338,11 +345,12 @@ function centerMapInContainer() {
     }
 }
 
-
-// Debounced zoom functions for better performance
+// Debounced zoom functions for better performance (kept for keyboard/dblclick usage)
 function debouncedZoom(callback) {
-    clearTimeout(zoomTimeout);
-    zoomTimeout = setTimeout(callback, 16); // ~60fps
+    if (rafId) {
+        cancelAnimationFrame(rafId);
+    }
+    rafId = requestAnimationFrame(callback);
 }
 
 // Funktion för att zooma in
@@ -364,7 +372,15 @@ function zoomOut() {
 // Funktion för att zooma in genom dubbelklick
 function zoomInOnDoubleClick(event) {
     debouncedZoom(() => {
-        scale = Math.min(scale * 1.5, 5); // Öka skalan med 50%, max 5x
+        // Zoom towards cursor on doubleclick
+        const rect = mapContainerElement.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+        const newScale = Math.min(scale * 1.5, 5);
+        const ratio = newScale / scale;
+        offsetX = mouseX - ratio * (mouseX - offsetX);
+        offsetY = mouseY - ratio * (mouseY - offsetY);
+        scale = newScale;
         updateTransform();
     });
 }
@@ -372,11 +388,17 @@ function zoomInOnDoubleClick(event) {
 // Funktion för att zooma ut genom dubbelklick
 function zoomOutOnDoubleClick(event) {
     debouncedZoom(() => {
-        scale = Math.max(scale * 0.5, 0.5); // Minska skalan med 50%, min 0.5x
+        const rect = mapContainerElement.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+        const newScale = Math.max(scale * 0.5, 0.5);
+        const ratio = newScale / scale;
+        offsetX = mouseX - ratio * (mouseX - offsetX);
+        offsetY = mouseY - ratio * (mouseY - offsetY);
+        scale = newScale;
         updateTransform();
     });
 }
-
 
 // Lyssna på dubbelklickshändelser på kartan och zooma in eller ut beroende på dubbelklicksåtgärden
 document.addEventListener("DOMContentLoaded", function() {
@@ -390,8 +412,12 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     }
-});
 
+    // Scroll wheel zoom support — attach a single coherent handler with passive:false so preventDefault works
+    if (mapContainerElement) {
+        mapContainerElement.addEventListener("wheel", handleWheelZoom, { passive: false });
+    }
+});
 
 
 // Function to pan map by coordinates (utility function)
@@ -411,7 +437,7 @@ function panMapByCoordinates(dx, dy) {
   // Funktion för att börja panorera
   function startPan(event) {
     // Don't start panning if clicking on zoom controls
-    if (event.target.closest('.zoom-controls')) {
+    if (event.target.closest && event.target.closest('.zoom-controls')) {
       return;
     }
     
@@ -454,11 +480,6 @@ function panMapByCoordinates(dx, dy) {
       // Keyboard navigation support
       document.addEventListener("keydown", handleKeyboardNavigation);
       
-      // Scroll wheel zoom support
-      if (mapContainerElement) {
-          mapContainerElement.addEventListener("wheel", handleWheelZoom);
-      }
-      
       // Prevent zoom controls from triggering pan
       const zoomControls = document.querySelector('.zoom-controls');
       if (zoomControls) {
@@ -468,25 +489,40 @@ function panMapByCoordinates(dx, dy) {
       }
   });
   
-  // Wheel zoom function
+// Wheel zoom function (single coherent handler)
+// Zooms toward the mouse cursor and updates scale/offset variables so state stays consistent
 function handleWheelZoom(event) {
-    event.preventDefault();           // Hindra sidans scroll
-    const delta = event.deltaY;
-    const zoomSpeed = 0.1;            // Mindre = mjukare zoom
+    // Prevent page scrolling; listener added with { passive: false } so this is respected
+    event.preventDefault();
 
-    if (delta < 0) {
-        // Rulla upp → zooma in
-        debouncedZoom(() => {
-            scale = Math.min(scale + zoomSpeed, 5);   // max 5×
-            updateTransform();
-        });
-    } else if (delta > 0) {
-        // Rulla ned → zooma ut
-        debouncedZoom(() => {
-            scale = Math.max(scale - zoomSpeed, 0.5); // min 0.5×
-            updateTransform();
-        });
+    initializeCache();
+    if (!mapContainerElement || !svgMapElement) return;
+
+    // Use deltaY where negative = wheel up (zoom in) and positive = wheel down (zoom out)
+    const delta = -event.deltaY;
+    // Tuned zoom speed: exponential style provides smoother feel
+    const zoomIntensity = 0.0015; // smaller = slower
+    const newScale = clamp(scale * Math.exp(delta * zoomIntensity), 0.5, 5);
+
+    // Compute mouse position relative to container
+    const rect = mapContainerElement.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    // Adjust offsets so we zoom toward the mouse point
+    const ratio = newScale / scale;
+    offsetX = mouseX - ratio * (mouseX - offsetX);
+    offsetY = mouseY - ratio * (mouseY - offsetY);
+
+    scale = newScale;
+
+    // Use requestAnimationFrame to batch DOM updates
+    if (rafId) {
+        cancelAnimationFrame(rafId);
     }
+    rafId = requestAnimationFrame(() => {
+        updateTransform();
+    });
 }
 
   // Keyboard navigation function
@@ -536,14 +572,6 @@ function handleWheelZoom(event) {
               break;
       }
   }
-
-
-
-
-
-
-
-
 
 // EXPORTERA KARTAN
 
@@ -629,32 +657,3 @@ function exportMap() {
         alert('Failed to initialize export. Please try again.');
     }
 }
-
-// Add mousewheel zoom event listener
-mapContainer.addEventListener('wheel', function(event) {
-    event.preventDefault();
-    
-    // Get the current scale
-    const currentTransform = window.getComputedStyle(svgMap).getPropertyValue('transform');
-    const matrix = new DOMMatrix(currentTransform);
-    const currentScale = matrix.a;
-    
-    // Calculate new scale with reduced zoom speed (0.05 for smoother zoom)
-    const zoomFactor = 0.05;
-    // Fix zoom direction - deltaY positive means scroll down (zoom out)
-    const newScale = currentScale * (1 - (event.deltaY * 0.001));
-    
-    // Limit zoom range
-    if (newScale >= 0.5 && newScale <= 4) {
-        // Get mouse position relative to SVG
-        const rect = svgMap.getBoundingClientRect();
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
-        
-        // Apply zoom transformation
-        svgMap.style.transformOrigin = `${mouseX}px ${mouseY}px`;
-        svgMap.style.transform = `scale(${newScale})`;
-    }
-});
-
-
