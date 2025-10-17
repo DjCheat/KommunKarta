@@ -321,63 +321,69 @@ function initializeCache() {
     }
 }
 
-// Ny funktion: justera checkbox-listans layout och höjd så den matchar kartcontainer
+// Funktion för att justera checkbox-listans layout
 function adjustCheckboxListLayout() {
     initializeCache();
     if (!checkboxList || !mapContainerElement) return;
 
     const rect = mapContainerElement.getBoundingClientRect();
 
-    // Rensa gamla children
+    // Rensa gamla children och behåll bara labels
     const labels = Array.from(checkboxList.querySelectorAll('label'));
     checkboxList.innerHTML = '';
 
-    // Bestäm antal kolumner baserat på containerbredd
-    const approxColWidth = 200; // justera vid behov
-    const cols = Math.max(1, Math.floor(rect.width / approxColWidth));
-
-    // Sortera labels alfabetiskt vertikalt
-    labels.sort((a, b) => {
-        return a.textContent.localeCompare(b.textContent, 'sv', { sensitivity: 'base' });
-    });
-
-    // Beräkna antal rader som behövs för vertikal fyllning
-    const rows = Math.ceil(labels.length / cols);
-
-    // Skapa wrapper för horisontell scroll
-    const wrapper = document.createElement('div');
-    wrapper.style.display = 'flex';
-    wrapper.style.gap = '12px';
-    wrapper.style.height = '100%'; 
-    wrapper.style.overflowX = 'auto';
-    wrapper.style.overflowY = 'hidden';
-
-    // Skapa kolumner och fyll vertikalt först
-    for (let c = 0; c < cols; c++) {
-        const colDiv = document.createElement('div');
-        colDiv.style.display = 'flex';
-        colDiv.style.flexDirection = 'column';
-        colDiv.style.gap = '6px';
-        colDiv.style.flex = '0 0 auto'; // viktig för horisontell scroll
-
-        for (let r = 0; r < rows; r++) {
-            const index = r + c * rows; // fyll vertikalt först
-            if (labels[index]) {
-                colDiv.appendChild(labels[index]);
+    // Skapa en container för kolumnerna
+    const columnsContainer = document.createElement('div');
+    columnsContainer.style.display = 'flex';
+    columnsContainer.style.gap = '20px';
+    columnsContainer.style.height = '100%';
+    columnsContainer.style.overflowX = 'auto';
+    columnsContainer.style.overflowY = 'hidden';
+    columnsContainer.style.padding = '10px';
+    
+    // Beräkna hur många items som får plats i en kolumn
+    const labelHeight = 25; // Uppskattad höjd för varje label
+    const availableHeight = rect.height - 20; // Ta bort padding
+    const itemsPerColumn = Math.floor(availableHeight / labelHeight);
+    
+    // Beräkna antal kolumner som behövs
+    const totalColumns = Math.ceil(labels.length / itemsPerColumn);
+    
+    // Skapa kolumner och fördela labels
+    for (let col = 0; col < totalColumns; col++) {
+        const column = document.createElement('div');
+        column.style.display = 'flex';
+        column.style.flexDirection = 'column';
+        column.style.gap = '6px';
+        column.style.minWidth = '200px'; // Fast kolumnbredd
+        
+        // Fyll kolumnen med labels
+        for (let i = 0; i < itemsPerColumn; i++) {
+            const index = i * totalColumns + col;
+            if (index < labels.length) {
+                column.appendChild(labels[index].cloneNode(true));
             }
         }
-        wrapper.appendChild(colDiv);
+        
+        columnsContainer.appendChild(column);
     }
-
-    checkboxList.appendChild(wrapper);
-
-    // Se till att labels ser bra ut
-    const allLabels = checkboxList.querySelectorAll('label');
-    allLabels.forEach(l => {
-        l.style.display = 'flex';
-        l.style.alignItems = 'center';
-        l.style.gap = '8px';
-        l.style.whiteSpace = 'normal';
+    
+    // Lägg till container i checkbox-listan
+    checkboxList.appendChild(columnsContainer);
+    
+    // Återanslut event listeners för nya labels
+    checkboxList.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', toggleKommunColor);
+    });
+    
+    // Stilar för labels
+    checkboxList.querySelectorAll('label').forEach(label => {
+        label.style.display = 'flex';
+        label.style.alignItems = 'center';
+        label.style.gap = '8px';
+        label.style.whiteSpace = 'nowrap';
+        label.style.cursor = 'pointer';
+        label.style.userSelect = 'none';
     });
 }
 
