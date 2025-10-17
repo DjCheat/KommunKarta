@@ -1,6 +1,6 @@
 // karta.js
 
-// Hämta SVG-elementet för kartan
+// Hämta SVG-elementet för kartan (used for initial injection)
 const svgMap = document.getElementById('sweden-map');
 
 // Hämta checkboxlistan
@@ -29,7 +29,7 @@ fetch('kommuner.json')
                     centerMapInContainer();
                 }, 100);
 
-                // Återställ checkbox-tillstånd från localStorage
+                // Återställ checkbox-tillstånd från localStorage (if previously saved)
                 const savedCheckboxState = JSON.parse(localStorage.getItem('checkboxState')) || {};
 
                 // Loopa igenom varje kommun i den sorterade ordningen
@@ -56,6 +56,11 @@ fetch('kommuner.json')
                         checkbox.id = kommunKod;
                         checkbox.addEventListener('change', toggleKommunColor);
 
+                        // Restore saved state if any
+                        if (savedCheckboxState[kommunKod]) {
+                            checkbox.checked = true;
+                        }
+
                         // Add click event to label as backup to ensure it works
                         label.addEventListener('click', function(event) {
                             // Only trigger if the click wasn't on the checkbox itself
@@ -70,7 +75,7 @@ fetch('kommuner.json')
                         checkboxList.appendChild(label);
 
                         // Uppdatera kommunens färg baserat på checkboxens tillstånd
-                        toggleKommunColor({ target: checkbox });     
+                        toggleKommunColor({ target: checkbox });
                     }
                 });
             })
@@ -87,7 +92,7 @@ function toggleKommunColor(event) {
     const kommuner = document.querySelectorAll(`[id="${kommunKod}"]`);
 
     kommuner.forEach(kommun => {
-        if (kommun.tagName === 'g') {
+        if (kommun.tagName.toLowerCase() === 'g') {
             // Om elementet är en grupp (g), hämta alla polygoner inuti och applicera färg
             const polygons = kommun.querySelectorAll('polygon, path'); // För att inkludera både polygoner och paths
             polygons.forEach(polygon => {
@@ -276,21 +281,23 @@ function loadMultipleStates(stateNames) {
 
 // Removed auto-execution - states should only load when user clicks the button
 
-
 // Event listener för att ladda flera tillstånd när knappen klickas
-document.getElementById('load-all-states-btn').addEventListener('click', function() {
-    loadMultipleStates(['Vision', 'Future', 'Mobile']);
-});
+const loadAllBtn = document.getElementById('load-all-states-btn');
+if (loadAllBtn) {
+    loadAllBtn.addEventListener('click', function() {
+        loadMultipleStates(['Vision', 'Future', 'Mobile']);
+    });
+}
 
 
 // ZOOM-FUNKTIONER
 
-// Variabler för zoomnivå och position
+// Variabler för zoomnivå och position (source of truth)
 let scale = 1;
 let offsetX = 0;
 let offsetY = 0;
 
-// Performance optimization: Cache DOM elements and add debouncing
+// Performance optimization: Cache DOM elements and rAF id
 let svgMapElement = null;
 let mapContainerElement = null;
 let rafId = null;
@@ -310,14 +317,12 @@ function initializeCache() {
 }
 
 // Funktion för att uppdatera transformeringen (zoom och panorering)
+// NOTE: translate THEN scale ordering keeps pan offsets in unscaled pixels, making math simpler.
 function updateTransform() {
     initializeCache();
     if (svgMapElement) {
-        // Use translate in pixels and scale, order: translate then scale so translations are not affected by scale
-        // However to preserve existing logic and semantics, we use scale then translate but carefully update offsets accordingly.
-        // Keep the same ordering as before to avoid big visual changes:
-        var transformValue = "scale(" + scale + ") translate(" + offsetX + "px, " + offsetY + "px)";
-        svgMapElement.style.transform = transformValue;
+        svgMapElement.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+        svgMapElement.style.transformOrigin = '0 0'; // ensure consistent origin
     }
 }
 
@@ -334,7 +339,7 @@ function centerMapInContainer() {
         const containerRect = mapContainerElement.getBoundingClientRect();
         const svgRect = svgMapElement.getBoundingClientRect();
         
-        // Calculate center offsets
+        // Calculate center offsets (unscaled pixel offsets)
         const centerX = (containerRect.width - svgRect.width) / 2;
         const centerY = (containerRect.height - svgRect.height) / 2;
         
@@ -345,7 +350,7 @@ function centerMapInContainer() {
     }
 }
 
-// Debounced zoom functions for better performance (kept for keyboard/dblclick usage)
+// Debounced zoom functions for keyboard/dblclick usage
 function debouncedZoom(callback) {
     if (rafId) {
         cancelAnimationFrame(rafId);
@@ -356,7 +361,17 @@ function debouncedZoom(callback) {
 // Funktion för att zooma in
 function zoomIn() {
     debouncedZoom(() => {
-        scale = Math.min(scale + 0.5, 5); // Limit maximum zoom
+        const newScale = Math.min(scale + 0.5, 5);
+        // zoom centered on container center
+        initializeCache();
+        if (mapContainerElement) {
+            const rect = mapContainerElement.getBoundingClientRect();
+            const cx = rect.width / 2;
+            const cy = rect.height / 2;
+            offsetX += cx * (1 / newScale - 1 / scale);
+            offsetY += cy * (1 / newScale - 1 / scale);
+        }
+        scale = newScale;
         updateTransform();
     });
 }
@@ -364,45 +379,181 @@ function zoomIn() {
 // Funktion för att zooma ut
 function zoomOut() {
     debouncedZoom(() => {
-        scale = Math.max(scale - 0.5, 0.5); // Limit minimum zoom
+        const newScale = Math.max(scale - 0.5, 0.5);
+        initializeCache();
+        if (mapContainerElement) {
+            const rect = mapContainerElement.getBoundingClientRect();
+            const cx = rect.width / 2;
+            const cy = rect.height / 2;
+            offsetX += cx * (1 / newScale - 1 / scale);
+            offsetY += cy * (1 / newScale - 1 / scale);
+        }
+        scale = newScale;
         updateTransform();
     });
 }
 
-// Funktion för att zooma in genom dubbelklick
+// Funktion för att zooma in genom dubbelklick (toward cursor)
 function zoomInOnDoubleClick(event) {
     debouncedZoom(() => {
-        // Zoom towards cursor on doubleclick
+        initializeCache();
         const rect = mapContainerElement.getBoundingClientRect();
         const mouseX = event.clientX - rect.left;
         const mouseY = event.clientY - rect.top;
         const newScale = Math.min(scale * 1.5, 5);
-        const ratio = newScale / scale;
-        offsetX = mouseX - ratio * (mouseX - offsetX);
-        offsetY = mouseY - ratio * (mouseY - offsetY);
+        offsetX += mouseX * (1 / newScale - 1 / scale);
+        offsetY += mouseY * (1 / newScale - 1 / scale);
         scale = newScale;
         updateTransform();
     });
 }
 
-// Funktion för att zooma ut genom dubbelklick
+// Funktion för att zooma ut genom dubbelklick (toward cursor)
 function zoomOutOnDoubleClick(event) {
     debouncedZoom(() => {
+        initializeCache();
         const rect = mapContainerElement.getBoundingClientRect();
         const mouseX = event.clientX - rect.left;
         const mouseY = event.clientY - rect.top;
         const newScale = Math.max(scale * 0.5, 0.5);
-        const ratio = newScale / scale;
-        offsetX = mouseX - ratio * (mouseX - offsetX);
-        offsetY = mouseY - ratio * (mouseY - offsetY);
+        offsetX += mouseX * (1 / newScale - 1 / scale);
+        offsetY += mouseY * (1 / newScale - 1 / scale);
         scale = newScale;
         updateTransform();
     });
 }
 
-// Lyssna på dubbelklickshändelser på kartan och zooma in eller ut beroende på dubbelklicksåtgärden
+// Panning variables
+let isDragging = false;
+let startX = 0;
+let startY = 0;
+let startOffsetX = 0;
+let startOffsetY = 0;
+
+// Funktion för att börja panorera
+function startPan(event) {
+    // Don't start panning if clicking on zoom controls
+    if (event.target && event.target.closest && event.target.closest('.zoom-controls')) {
+        return;
+    }
+    isDragging = true;
+    startX = event.clientX;
+    startY = event.clientY;
+    startOffsetX = offsetX;
+    startOffsetY = offsetY;
+}
+
+// Funktion för att panorera kartan
+function panMap(event) {
+    if (isDragging) {
+        const dx = event.clientX - startX;
+        const dy = event.clientY - startY;
+        offsetX = startOffsetX + dx;
+        offsetY = startOffsetY + dy;
+        updateTransform();
+    }
+}
+
+// Funktion för att avsluta panorering
+function endPan() {
+    isDragging = false;
+}
+
+// Wheel zoom function (single coherent handler)
+// Zooms toward the mouse cursor and updates scale/offset variables so state stays consistent
+function handleWheelZoom(event) {
+    // Prevent page scrolling; listener must be added with { passive: false }
+    event.preventDefault();
+
+    initializeCache();
+    if (!mapContainerElement || !svgMapElement) return;
+
+    // Wheel delta: negative = wheel up (zoom in), positive = wheel down (zoom out)
+    const delta = -event.deltaY;
+
+    // exponential zoom for smooth feel; tweak zoomIntensity to adjust sensitivity
+    const zoomIntensity = 0.0015;
+    const newScale = clamp(scale * Math.exp(delta * zoomIntensity), 0.5, 5);
+
+    // Compute mouse position relative to container (unscaled coordinates)
+    const rect = mapContainerElement.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    // For translate-then-scale ordering: adjust offsets so the pixel under the cursor remains fixed
+    offsetX += mouseX * (1 / newScale - 1 / scale);
+    offsetY += mouseY * (1 / newScale - 1 / scale);
+
+    scale = newScale;
+
+    if (rafId) {
+        cancelAnimationFrame(rafId);
+    }
+    rafId = requestAnimationFrame(() => {
+        updateTransform();
+    });
+}
+
+// Keyboard navigation function
+function handleKeyboardNavigation(event) {
+    const key = event.key;
+    const step = 50; // Pan step size
+
+    // Don't handle when focusing text inputs
+    const activeElement = document.activeElement;
+    if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+        return;
+    }
+
+    switch(key) {
+        case 'ArrowUp':
+            event.preventDefault();
+            panMapByCoordinates(0, -step);
+            break;
+        case 'ArrowDown':
+            event.preventDefault();
+            panMapByCoordinates(0, step);
+            break;
+        case 'ArrowLeft':
+            event.preventDefault();
+            panMapByCoordinates(-step, 0);
+            break;
+        case 'ArrowRight':
+            event.preventDefault();
+            panMapByCoordinates(step, 0);
+            break;
+        case '+':
+        case '=':
+            event.preventDefault();
+            zoomIn();
+            break;
+        case '-':
+            event.preventDefault();
+            zoomOut();
+            break;
+        case '0':
+            event.preventDefault();
+            resetView();
+            break;
+        case 'Escape':
+            event.preventDefault();
+            resetView();
+            break;
+    }
+}
+
+// Function to pan map by coordinates (utility function)
+function panMapByCoordinates(dx, dy) {
+    offsetX += dx;
+    offsetY += dy;
+    updateTransform();
+}
+
+// Initialize event listeners after DOM loaded
 document.addEventListener("DOMContentLoaded", function() {
     initializeCache();
+
+    // double click zoom on the SVG map
     if (svgMapElement) {
         svgMapElement.addEventListener("dblclick", function(event) {
             if (event.ctrlKey) {
@@ -413,165 +564,31 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // Scroll wheel zoom support — attach a single coherent handler with passive:false so preventDefault works
+    // wheel zoom on container (single handler) — ensure passive: false so preventDefault works
     if (mapContainerElement) {
-        mapContainerElement.addEventListener("wheel", handleWheelZoom, { passive: false });
+        mapContainerElement.addEventListener('wheel', handleWheelZoom, { passive: false });
+        mapContainerElement.addEventListener('mousedown', startPan);
     }
+
+    // mouse move/up for panning
+    document.addEventListener('mousemove', panMap);
+    document.addEventListener('mouseup', endPan);
+
+    // keyboard navigation
+    document.addEventListener('keydown', handleKeyboardNavigation);
+
+    // Prevent zoom controls from triggering pan
+    const zoomControls = document.querySelector('.zoom-controls');
+    if (zoomControls) {
+        zoomControls.addEventListener('mousedown', function(event) {
+            event.stopPropagation(); // Prevent pan from starting when clicking zoom controls
+        });
+    }
+
+    // Apply initial transform to ensure consistent state
+    updateTransform();
 });
 
-
-// Function to pan map by coordinates (utility function)
-function panMapByCoordinates(dx, dy) {
-    offsetX += dx;
-    offsetY += dy;
-    updateTransform();
-}
-  
-  // Variabler för att spara startpositionen vid klick
-  var isDragging = false;
-  var startX = 0;
-  var startY = 0;
-  var startOffsetX = 0;
-  var startOffsetY = 0;
-  
-  // Funktion för att börja panorera
-  function startPan(event) {
-    // Don't start panning if clicking on zoom controls
-    if (event.target.closest && event.target.closest('.zoom-controls')) {
-      return;
-    }
-    
-    isDragging = true;
-    startX = event.clientX;
-    startY = event.clientY;
-    startOffsetX = offsetX;
-    startOffsetY = offsetY;
-  }
-  
-  // Funktion för att panorera kartan
-  function panMap(event) {
-    if (isDragging) {
-      var dx = event.clientX - startX;
-      var dy = event.clientY - startY;
-      offsetX = startOffsetX + dx;
-      offsetY = startOffsetY + dy;
-      updateTransform();
-    }
-  }
-  
-  // Funktion för att avsluta panorering
-  function endPan() {
-    isDragging = false;
-  }
-  
-  // Initialize pan event listeners
-  document.addEventListener("DOMContentLoaded", function() {
-      initializeCache();
-      if (mapContainerElement) {
-          mapContainerElement.addEventListener("mousedown", startPan);
-      }
-      
-      // Lyssna på musrörelse för att panorera
-      document.addEventListener("mousemove", panMap);
-      
-      // Lyssna på musknappsläpp för att avsluta panorering
-      document.addEventListener("mouseup", endPan);
-      
-      // Keyboard navigation support
-      document.addEventListener("keydown", handleKeyboardNavigation);
-      
-      // Prevent zoom controls from triggering pan
-      const zoomControls = document.querySelector('.zoom-controls');
-      if (zoomControls) {
-          zoomControls.addEventListener('mousedown', function(event) {
-              event.stopPropagation(); // Prevent pan from starting when clicking zoom controls
-          });
-      }
-  });
-  
-// Wheel zoom function (single coherent handler)
-// Zooms toward the mouse cursor and updates scale/offset variables so state stays consistent
-function handleWheelZoom(event) {
-    // Prevent page scrolling; listener added with { passive: false } so this is respected
-    event.preventDefault();
-
-    initializeCache();
-    if (!mapContainerElement || !svgMapElement) return;
-
-    // Use deltaY where negative = wheel up (zoom in) and positive = wheel down (zoom out)
-    const delta = -event.deltaY;
-    // Tuned zoom speed: exponential style provides smoother feel
-    const zoomIntensity = 0.0015; // smaller = slower
-    const newScale = clamp(scale * Math.exp(delta * zoomIntensity), 0.5, 5);
-
-    // Compute mouse position relative to container
-    const rect = mapContainerElement.getBoundingClientRect();
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-
-    // Adjust offsets so we zoom toward the mouse point
-    const ratio = newScale / scale;
-    offsetX = mouseX - ratio * (mouseX - offsetX);
-    offsetY = mouseY - ratio * (mouseY - offsetY);
-
-    scale = newScale;
-
-    // Use requestAnimationFrame to batch DOM updates
-    if (rafId) {
-        cancelAnimationFrame(rafId);
-    }
-    rafId = requestAnimationFrame(() => {
-        updateTransform();
-    });
-}
-
-  // Keyboard navigation function
-  function handleKeyboardNavigation(event) {
-      const key = event.key;
-      const step = 50; // Pan step size
-      
-      // Only handle keyboard events when map container is focused or when no specific element is focused
-      const activeElement = document.activeElement;
-      if (activeElement && activeElement.tagName === 'INPUT') {
-          return; // Don't interfere with form inputs
-      }
-      
-      switch(key) {
-          case 'ArrowUp':
-              event.preventDefault();
-              panMapByCoordinates(0, -step);
-              break;
-          case 'ArrowDown':
-              event.preventDefault();
-              panMapByCoordinates(0, step);
-              break;
-          case 'ArrowLeft':
-              event.preventDefault();
-              panMapByCoordinates(-step, 0);
-              break;
-          case 'ArrowRight':
-              event.preventDefault();
-              panMapByCoordinates(step, 0);
-              break;
-          case '+':
-          case '=':
-              event.preventDefault();
-              zoomIn();
-              break;
-          case '-':
-              event.preventDefault();
-              zoomOut();
-              break;
-          case '0':
-              event.preventDefault();
-              resetView();
-              break;
-          case 'Escape':
-              event.preventDefault();
-              resetView();
-              break;
-      }
-  }
 
 // EXPORTERA KARTAN
 
