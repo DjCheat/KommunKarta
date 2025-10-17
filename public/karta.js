@@ -470,18 +470,23 @@ function panMapByCoordinates(dx, dy) {
   
   // Wheel zoom function
 function handleWheelZoom(event) {
-    event.preventDefault();
-    const zoomFactor = 1.1;
+    event.preventDefault();           // Hindra sidans scroll
+    const delta = event.deltaY;
+    const zoomSpeed = 0.1;            // Mindre = mjukare zoom
 
-    if (event.deltaY < 0) {
-        // Zooma in
-        scale = Math.min(scale * zoomFactor, 5);
-    } else {
-        // Zooma ut
-        scale = Math.max(scale / zoomFactor, 0.5);
+    if (delta < 0) {
+        // Rulla upp → zooma in
+        debouncedZoom(() => {
+            scale = Math.min(scale + zoomSpeed, 5);   // max 5×
+            updateTransform();
+        });
+    } else if (delta > 0) {
+        // Rulla ned → zooma ut
+        debouncedZoom(() => {
+            scale = Math.max(scale - zoomSpeed, 0.5); // min 0.5×
+            updateTransform();
+        });
     }
-
-    updateTransform();
 }
 
   // Keyboard navigation function
@@ -651,4 +656,5 @@ mapContainer.addEventListener('wheel', function(event) {
         svgMap.style.transform = `scale(${newScale})`;
     }
 });
+
 
