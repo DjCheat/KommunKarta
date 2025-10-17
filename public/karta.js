@@ -17,11 +17,12 @@ fetch('kommuner.json')
                 // Lägg till SVG-filen i dokumentet
                 svgMap.innerHTML = svgData;
 
-                // Hämta kommunkoderna i ordning från JSON-data och sortera dem i bokstavsordning
+                // Hämta kommunkoderna i ordning från JSON-data och sortera dem i bokstavsordning (svenska)
                 const kommunKoder = Object.keys(data).sort((a, b) => {
-                    const kommunNamnA = data[a].toLowerCase();
-                    const kommunNamnB = data[b].toLowerCase();
-                    return kommunNamnA.localeCompare(kommunNamnB);
+                    const kommunNamnA = data[a] || '';
+                    const kommunNamnB = data[b] || '';
+                    // Use Swedish locale so å/ä/ö sorteras correctly
+                    return kommunNamnA.localeCompare(kommunNamnB, 'sv', { sensitivity: 'base' });
                 });
 
                 // Center the map in the container on page load
@@ -78,10 +79,14 @@ fetch('kommuner.json')
                         toggleKommunColor({ target: checkbox });
                     }
                 });
-            })
-            .catch(error => console.error('Error fetching SVG file:', error));
-    })
-    .catch(error => console.error('Error fetching JSON file:', error));
+
+                // Anpassa layouten för checkbox-listan efter att alla checkboxar har skapats
+                adjustCheckboxListLayout();
+                
+             })
+             .catch(error => console.error('Error fetching SVG file:', error));
+     })
+     .catch(error => console.error('Error fetching JSON file:', error));
 
 
 // Funktion för att ändra färg på kommun baserat på checkboxstatus
@@ -314,6 +319,34 @@ function initializeCache() {
     if (!mapContainerElement) {
         mapContainerElement = document.getElementById("mapContainer");
     }
+}
+
+// Ny funktion: justera checkbox-listans layout och höjd så den matchar kartcontainer
+function adjustCheckboxListLayout() {
+    initializeCache();
+    if (!checkboxList || !mapContainerElement) return;
+
+    const rect = mapContainerElement.getBoundingClientRect();
+
+    // Sätt höjd så att listan matchar kartans container och får scrollbar vid behov
+    checkboxList.style.height = rect.height + 'px';
+    checkboxList.style.overflowY = 'auto';
+
+    // Responsiv grid – antal kolumner baserat på containerbredd
+    const approxColWidth = 260; // justera efter önskat utseende
+    const cols = Math.max(1, Math.floor(rect.width / approxColWidth));
+    checkboxList.style.display = 'grid';
+    checkboxList.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+    checkboxList.style.gap = '6px 12px';
+
+    // Se till att varje label radbryts och har bra inre layout
+    const labels = checkboxList.querySelectorAll('label');
+    labels.forEach(l => {
+        l.style.display = 'flex';
+        l.style.alignItems = 'center';
+        l.style.gap = '8px';
+        l.style.whiteSpace = 'normal';
+    });
 }
 
 // Funktion för att uppdatera transformeringen (zoom och panorering)
@@ -553,6 +586,10 @@ function panMapByCoordinates(dx, dy) {
 // Initialize event listeners after DOM loaded
 document.addEventListener("DOMContentLoaded", function() {
     initializeCache();
+
+    // Anpassa checkbox-layout vid init och vid resize
+    adjustCheckboxListLayout();
+    window.addEventListener('resize', adjustCheckboxListLayout);
 
     // double click zoom on the SVG map
     if (svgMapElement) {
