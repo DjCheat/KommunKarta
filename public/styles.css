@@ -133,7 +133,7 @@ h1 {
   box-sizing: border-box;
 
   /* Adjust these properties for tighter columns */
-  column-width: 80px;    /* Make columns slightly narrower */
+  column-width: 180px;    /* Make columns slightly narrower */
   column-gap: 2px;        /* Minimal gap between columns */
   columns: auto;
   column-fill: auto;
@@ -158,7 +158,7 @@ h1 {
 /* Increase columns on larger screens for better use of space */
 @media (min-width: 1100px) {
   #checkbox-list {
-    columns: 3;
+    columns: 5;
   }
 }
 @media (max-width: 700px) {
@@ -278,4 +278,5 @@ button:focus {
   margin-top: 10px; /* Lägg till lite marginal över knapparna */
   width: auto; /* Använd automatisk bredd för zoom-knapparna */
 }
+
 
