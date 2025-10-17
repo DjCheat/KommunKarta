@@ -130,7 +130,7 @@ h1 {
 
   /* Use CSS columns so checkboxes flow vertically and then into columns */
   columns: 2;          /* default number of columns */
-  column-gap: 16px;    /* gap between columns */
+  column-gap: 6px;    /* gap between columns */
 }
 
 /* Increase columns on larger screens for better use of space */
@@ -256,3 +256,4 @@ button:focus {
   margin-top: 10px; /* Lägg till lite marginal över knapparna */
   width: auto; /* Använd automatisk bredd för zoom-knapparna */
 }
+
