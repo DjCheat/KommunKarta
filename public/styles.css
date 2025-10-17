@@ -1,67 +1,67 @@
-/* Återställ standardmarginaler och fyllningar */
+/* --- Återställ standarder --- */
 body, html {
   margin: 0;
   padding: 0;
-  height: 100%; /* Gör hela sidan tillgänglig för layouten */
+  height: 100%;
+  font-family: Arial, sans-serif;
 }
 
-/* Container för rubriken */
+/* --- Rubrik --- */
 h1 {
-  text-align: center; /* Centrera texten */
-  font-size: 3em; /* Gör textstorleken dubbelt så stor som standard */
+  text-align: center;
+  font-size: 3em;
 }
 
-/* Container för kartan och checkboxlistan */
+/* --- Huvudcontainer --- */
 .container {
-  display: flex; /* Använd flexbox för att anpassa layouten */
+  display: flex;
   justify-content: center;
   align-items: flex-start;
-  width: 80%; /* Begränsa bredden för container */
-  height: 75vh; /* Gör container hög nog för att fylla hela sidan */
-  margin: auto; /* Centrera container på sidan */
-  padding-top: 20px; /* Lägg till lite padding överst */
-  padding-bottom: 20px; /* Lägg till lite padding under */
+  width: 80%;
+  height: 75vh;
+  margin: auto;
+  padding: 20px 0;
+  gap: 20px;
 }
 
-
-/* Wrapper for map and export button */
+/* --- Map + export --- */
 .map-and-export-wrapper {
   width: 35%;
-  margin-right: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-/* CSS för att styla kartbehållaren */
 #mapContainer {
   width: 100%;
   height: 100%;
   border: 1px solid #000;
-  display: flex;
-  align-items: center; /* Add this to center vertically */
-  justify-content: center; /* Add this to center horizontally */
   overflow: hidden;
   cursor: grab;
-  outline: none;
   position: relative;
+  outline: none;
 }
 
-/* Container for export button - centered below map */
-.export-btn-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 10px;
-  width: 100%;
+#mapContainer:active {
+  cursor: grabbing;
 }
 
-/* Focus styles for accessibility */
 #mapContainer:focus {
   outline: 3px solid #007bff;
   outline-offset: 2px;
 }
 
-/* Zoom controls styling - positioned in lower right corner */
+#sweden-map {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+  transform-origin: center center;
+  display: block;
+  margin: auto;
+}
+
+/* --- Zoom controls --- */
 .zoom-controls {
   position: absolute;
   bottom: 10px;
@@ -69,13 +69,8 @@ h1 {
   z-index: 10;
   display: flex;
   flex-direction: column;
-  gap: 4px; /* small gap between buttons */
+  gap: 4px;
 }
-.zoom-button {
-  margin-top: 0; /* remove the large extra top margin */
-  width: auto; /* Använd automatisk bredd för zoom-knapparna */
-}
-
 
 .zoom-btn {
   width: 32px;
@@ -110,37 +105,11 @@ h1 {
   outline-offset: 2px;
 }
 
-.zoom-in {
-  color: #28a745;
-}
+.zoom-in { color: #28a745; }
+.zoom-out { color: #dc3545; }
+.zoom-reset { color: #6c757d; font-size: 16px; }
 
-.zoom-out {
-  color: #dc3545;
-}
-
-.zoom-reset {
-  color: #6c757d;
-  font-size: 16px;
-}
-
-/* Ändra muspekaren till en hand som pekar när användaren klickar och drar */
-#mapContainer:active {
-  cursor: grabbing;
-}
-
-/* CSS för att styla SVG-kartan */
-#sweden-map {
-  width: 100%;
-  height: 100%; /* Change from auto to 100% */
-  max-height: 100%; /* Add max-height */
-  object-fit: contain; /* Add this to maintain aspect ratio */
-  transition: transform 0.3s ease;
-  transform-origin: center center;
-  display: block;
-  margin: auto;
-}
-
-/* Wrapper for checkbox list and control buttons */
+/* --- Checkbox och kontroller --- */
 .checkbox-and-controls-wrapper {
   width: 65%;
   display: flex;
@@ -148,64 +117,61 @@ h1 {
   align-items: center;
 }
 
-/* Stil för checkbox-listan
-   Gör listan horisontellt scrollbar och visa 5 kolumner i synligt fönster.
-   Justera --rows om du vill ändra hur många rader per kolumn som ska visas. */
 #checkbox-list {
   width: 100%;
   height: 100%;
-  overflow-x: auto;    /* Horisontell rullning */
-  overflow-y: hidden;  /* Ingen vertikal rullning för yttre container */
+  overflow-x: auto;
+  overflow-y: hidden;
   background-color: #f0f0f0;
   border: 1px solid #000;
   padding: 10px;
   box-sizing: border-box;
-  flex-direction: column; /* Organisera vertikalt först */
-  display: flex;               /* fem kolumner horisontellt */
+  display: flex;
   gap: 12px;
-  align-items: flex-start;
-  /* gör så att kolumnerna kan breda sig horisontellt och skapa scrolling */
   white-space: nowrap;
 }
 
-/* Varje kolumn innehåller vertikal lista av labels */
 .checkbox-column {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  align-items: stretch;
-  height: 100%;
-  box-sizing: border-box;
-  padding-right: 6px;
-  /* Fixed visible width so 5 columns fit the container */
   min-width: 20%;
   max-width: 20%;
-  overflow: visible; /* undvik yttre vertikal scroll */
 }
 
-/* Etiketter anpassade för kolumnlayout */
 #checkbox-list label {
-  display: flex;       /* checkbox + text på samma rad */
+  display: inline-flex;
   align-items: center;
   width: 100%;
   cursor: pointer;
   padding: 4px 6px;
-  margin: 0;
+  margin: 0 0 6px 0;
   user-select: none;
-  white-space: normal;
   break-inside: avoid;
 }
 
-/* Se till att scrollbar är horisontell och synlig på alla plattformar */
-#checkbox-list::-webkit-scrollbar {
-  height: 10px;
-}
-#checkbox-list::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.2);
-  border-radius: 6px;
+#checkbox-list input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
 }
 
-/* Container for checkbox control buttons - centered below list */
+#checkbox-list input[type="checkbox"]:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 1px;
+}
+
+#checkbox-list label:hover {
+  background-color: rgba(0, 123, 255, 0.1);
+  border-radius: 3px;
+}
+
+#checkbox-list label:focus-within {
+  outline: 2px solid #007bff;
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
+/* --- Checkbox control buttons --- */
 .checkbox-controls-container {
   display: flex;
   justify-content: center;
@@ -214,89 +180,18 @@ h1 {
   width: 100%;
 }
 
-
-/* Increase columns on larger screens for better use of space */
-@media (min-width: 1100px) {
-  #checkbox-list {
-    columns: 5;
-  }
-}
-@media (max-width: 700px) {
-  #checkbox-list {
-    columns: 5;
-  }
-}
-
-/* Stil för varje listitem (li) / label
-   Use inline-flex so label contents (checkbox + text) align well,
-   and prevent labels from breaking across columns. */
-#checkbox-list label {
-  display: inline-flex; /* allow multicolumn flow while keeping checkbox and text aligned */
-  align-items: center; /* Centrera innehållet vertikalt */
-  width: 100%; /* each label fills the column width */
-  cursor: pointer; /* Make labels clickable */
-  padding: 4px 6px;
-  margin: 0 0 6px 0;
-  user-select: none; /* Prevent text selection when clicking */
-  -webkit-user-select: none; /* Safari */
-  -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* IE/Edge */
-
-  /* Prevent breaking inside columns */
-  break-inside: avoid;
-  -webkit-column-break-inside: avoid;
-  -moz-column-break-inside: avoid;
-}
-
-/* Improve checkbox accessibility */
-#checkbox-list input[type="checkbox"] {
-  margin-right: 8px;
-  cursor: pointer;
-}
-
-/* Focus styles for checkboxes */
-#checkbox-list input[type="checkbox"]:focus {
-  outline: 2px solid #007bff;
-  outline-offset: 1px;
-}
-
-/* Hover effect for labels to show they're clickable */
-#checkbox-list label:hover {
-  background-color: rgba(0, 123, 255, 0.1);
-  border-radius: 3px;
-}
-
-/* Focus styles for labels */
-#checkbox-list label:focus-within {
-  outline: 2px solid #007bff;
-  outline-offset: 1px;
-  border-radius: 3px;
-}
-
-/* Stil för exportknappen */
+/* --- Buttons --- */
 button {
-  margin-top: 1px; /* Lägg till lite marginal ovanför knappen */
-  margin-bottom: 1px; /* Lägg till lite marginal under knappen */
-  padding: 10px 10px; /* Lägg till fyllning för knappen */
-  font-size: 16px; /* Justera textstorleken */
-  
+  padding: 10px 14px;
+  font-size: 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
-
-
-.state-buttons-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-}
-
-.state-buttons-container button {
-  margin: 5px;
-}
-
 
 button:hover {
-  background-color: #45a049; /* Ändra bakgrundsfärgen när man håller över knappen */
+  background-color: #45a049;
 }
 
 button:focus {
@@ -304,38 +199,28 @@ button:focus {
   outline-offset: 2px;
 }
 
-/* Button style classes */
-.save-btn {
-  background-color: #9FCC3B !important;
+/* Button classes */
+.save-btn { background-color: #9FCC3B; color: #000; }
+.load-btn { background-color: #F2C418; color: #000; }
+.export-btn { background-color: #9FCC3B; color: #000; }
+
+/* --- State buttons --- */
+.state-buttons-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
 }
 
-.load-btn {
-  background-color: #F2C418 !important;
+/* --- Responsivitet --- */
+@media (max-width: 700px) {
+  .container {
+    flex-direction: column;
+    width: 95%;
+    gap: 15px;
+  }
+  .map-and-export-wrapper,
+  .checkbox-and-controls-wrapper {
+    width: 100%;
+  }
 }
-
-.export-btn {
-  background-color: #9FCC3B !important;
-}
-
-.margin-right-10 {
-  margin-right: 10px;
-}
-
-.margin-right-100 {
-  margin-right: 100px;
-}
-
-.margin-left-10 {
-  margin-left: 10px;
-}
-
-.margin-left-100 {
-  margin-left: 100px;
-}
-
-/* Stil för zoom-knappar */
-.zoom-button {
-  margin-top: 10px; /* Lägg till lite marginal över knapparna */
-  width: auto; /* Använd automatisk bredd för zoom-knapparna */
-}
-
