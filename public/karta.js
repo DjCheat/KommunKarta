@@ -333,7 +333,7 @@ function adjustCheckboxListLayout() {
     checkboxList.innerHTML = '';
 
     // Bestäm antal kolumner baserat på containerbredd
-    const approxColWidth = 200; // justera vid behov
+    const approxColWidth = 100; // justera vid behov
     const cols = Math.max(1, Math.floor(rect.width / approxColWidth));
 
     // Sortera labels alfabetiskt vertikalt
@@ -746,5 +746,6 @@ function exportMap() {
         alert('Failed to initialize export. Please try again.');
     }
 }
+
 
 
