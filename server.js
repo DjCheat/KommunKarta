@@ -17,6 +17,7 @@ app.use((req, res, next) => {
     res.header('X-Frame-Options', 'DENY');
     res.header('X-XSS-Protection', '1; mode=block');
     res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.header('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline';");
     
     // Handle preflight requests
     if (req.method === 'OPTIONS') {

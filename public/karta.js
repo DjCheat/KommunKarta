@@ -6,121 +6,104 @@ const svgMap = document.getElementById('sweden-map');
 // Hämta checkboxlistan
 const checkboxList = document.getElementById('checkbox-list');
 
-// Läs in kommundata från JSON-filen
-fetch('kommuner.json')
-    .then(response => response.json())
-    .then(data => {
-        // Hämta SVG-filen med kommunkoderna
-        fetch('kommunKarta.svg')
-            .then(response => response.text())
-            .then(svgData => {
-                // Lägg till SVG-filen i dokumentet
-                svgMap.innerHTML = svgData;
+async function init() {
+    try {
+        // Fetch resources in parallel for better performance
+        const [kommunData, svgData] = await Promise.all([
+            fetch('kommuner.json').then(res => res.json()),
+            fetch('kommunKarta.svg').then(res => res.text())
+        ]);
 
-                // Hämta kommunkoderna i ordning från JSON-data och sortera dem i bokstavsordning (svenska)
-                const kommunKoder = Object.keys(data).sort((a, b) => {
-                    const kommunNamnA = data[a] || '';
-                    const kommunNamnB = data[b] || '';
-                    // Use Swedish locale so å/ä/ö sorteras correctly
-                    return kommunNamnA.localeCompare(kommunNamnB, 'sv', { sensitivity: 'base' });
-                });
+        // Inject SVG into the map container
+        svgMap.innerHTML = svgData;
 
-                // Center the map in the container on page load
-                setTimeout(() => {
-                    centerMapInContainer();
-                }, 100);
+        // Sort municipality codes alphabetically (Swedish)
+        const kommunKoder = Object.keys(kommunData).sort((a, b) => {
+            const kommunNamnA = kommunData[a] || '';
+            const kommunNamnB = kommunData[b] || '';
+            return kommunNamnA.localeCompare(kommunNamnB, 'sv', { sensitivity: 'base' });
+        });
 
-                // Återställ checkbox-tillstånd från localStorage (if previously saved)
-                const savedCheckboxState = JSON.parse(localStorage.getItem('checkboxState')) || {};
+        // Restore checkbox state from localStorage
+        const savedCheckboxState = JSON.parse(localStorage.getItem('checkboxState')) || {};
 
-                // Loopa igenom varje kommun i den sorterade ordningen
-                kommunKoder.forEach(kommunKod => {
-                    const kommunNamn = data[kommunKod];
-                    let kommun = document.getElementById(kommunKod);
+        // Create checkboxes for each municipality
+        kommunKoder.forEach(kommunKod => {
+            const kommunNamn = kommunData[kommunKod];
+            // Check if a corresponding SVG element exists
+            const svgElement = document.getElementById(kommunKod);
 
-                    // Om kommunen inte hittades direkt, försök hitta den inuti grupperade objekt
-                    if (!kommun) {
-                        kommun = document.querySelector(`g[id="${kommunKod}"]`);
-                    }
+            if (svgElement) {
+                createCheckbox(kommunKod, kommunNamn, savedCheckboxState);
+            }
+        });
 
-                    if (kommun) {
-                        // Skapa checkboxar för varje kommun
-                        const label = document.createElement('label');
-                        label.htmlFor = kommunKod;
-                        label.textContent = kommunNamn;
-                        label.style.cursor = 'pointer'; // Make it clear the label is clickable
-                        label.style.userSelect = 'none'; // Prevent text selection when clicking
+        // Adjust layout and center the map
+        adjustCheckboxListLayout();
+        setTimeout(centerMapInContainer, 100); // Delay to ensure rendering is complete
 
-                        const checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.value = kommunKod;
-                        checkbox.id = kommunKod;
-                        checkbox.addEventListener('change', toggleKommunColor);
+    } catch (error) {
+        console.error('Initialization failed:', error);
+        // Optionally, display an error message to the user
+        document.getElementById('mapContainer').innerHTML = '<p>Error loading map data. Please try refreshing the page.</p>';
+    }
+}
 
-                        // Restore saved state if any
-                        if (savedCheckboxState[kommunKod]) {
-                            checkbox.checked = true;
-                        }
+function createCheckbox(kommunKod, kommunNamn, savedState) {
+    const label = document.createElement('label');
+    label.htmlFor = kommunKod;
+    label.textContent = kommunNamn;
+    label.style.cursor = 'pointer';
+    label.style.userSelect = 'none';
 
-                        // Add click event to label as backup to ensure it works
-                        label.addEventListener('click', function(event) {
-                            // Only trigger if the click wasn't on the checkbox itself
-                            if (event.target !== checkbox) {
-                                checkbox.checked = !checkbox.checked;
-                                toggleKommunColor({ target: checkbox });
-                            }
-                        });
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = kommunKod;
+    checkbox.id = kommunKod;
+    checkbox.addEventListener('change', toggleKommunColor);
 
-                        // Insert checkbox before text content for better layout
-                        label.insertBefore(checkbox, label.firstChild);
-                        checkboxList.appendChild(label);
+    // Restore saved state if any
+    if (savedState[kommunKod]) {
+        checkbox.checked = true;
+    }
 
-                        // Uppdatera kommunens färg baserat på checkboxens tillstånd
-                        toggleKommunColor({ target: checkbox });
-                    }
-                });
+    // Clicking the label should toggle the checkbox
+    label.addEventListener('click', function(event) {
+        if (event.target !== checkbox) {
+            checkbox.checked = !checkbox.checked;
+            // Manually dispatch the change event to trigger color update
+            checkbox.dispatchEvent(new Event('change'));
+        }
+    });
 
-                // Anpassa layouten för checkbox-listan efter att alla checkboxar har skapats
-                adjustCheckboxListLayout();
-                
-             })
-             .catch(error => console.error('Error fetching SVG file:', error));
-     })
-     .catch(error => console.error('Error fetching JSON file:', error));
+    label.insertBefore(checkbox, label.firstChild);
+    checkboxList.appendChild(label);
+
+    // Set initial color based on checkbox state
+    toggleKommunColor({ target: checkbox });
+}
 
 
 // Funktion för att ändra färg på kommun baserat på checkboxstatus
 function toggleKommunColor(event) {
     const kommunKod = event.target.value;
+    const isChecked = event.target.checked;
+    const newColor = isChecked ? '#138943' : '#ccc';
 
-    // Hämta alla element med kommunens ID (det kan vara enskilda element eller grupperade element)
-    const kommuner = document.querySelectorAll(`[id="${kommunKod}"]`);
+    // Find all visual parts (paths, polygons) for a municipality, even if they are in a group.
+    // This is more robust than checking the tag name.
+    const kommunElements = document.querySelectorAll(`#${kommunKod}, #${kommunKod} polygon, #${kommunKod} path`);
 
-    kommuner.forEach(kommun => {
-        if (kommun.tagName.toLowerCase() === 'g') {
-            // Om elementet är en grupp (g), hämta alla polygoner inuti och applicera färg
-            const polygons = kommun.querySelectorAll('polygon, path'); // För att inkludera både polygoner och paths
-            polygons.forEach(polygon => {
-                if (event.target.checked) {
-                    polygon.style.fill = '#138943'; // Ändra färgen på markerade polygoner
-                } else {
-                    polygon.style.fill = '#ccc'; // Återställ färgen till standard
-                }
-            });
-        } else {
-            // Om det är ett enskilt polygon-element, ändra dess färg direkt
-            if (event.target.checked) {
-                kommun.style.fill = '#138943';
-            } else {
-                kommun.style.fill = '#ccc';
-            }
+    kommunElements.forEach(element => {
+        // Only apply fill to visual elements, not the group (<g>) container itself
+        if (element.tagName.toLowerCase() !== 'g') {
+            element.style.fill = newColor;
         }
     });
 
     // Persist each checkbox change in a simple global state
     saveCheckboxState(event.target.id, event.target.checked);
 }
-
 
 // Funktion för att avmarkera alla checkboxar och återställa färgen på alla kommuner
 function uncheckAllCheckboxes() {
@@ -661,6 +644,9 @@ document.addEventListener("DOMContentLoaded", function() {
     updateTransform();
 });
 
+// Start the application
+init();
+
 
 // EXPORTERA KARTAN
 
@@ -746,6 +732,3 @@ function exportMap() {
         alert('Failed to initialize export. Please try again.');
     }
 }
-
-
-
