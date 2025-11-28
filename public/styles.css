@@ -1,224 +1,242 @@
-/* --- Återställ standarder --- */
-body, html {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  font-family: Arial, sans-serif;
+/* --- General & Body Styling --- */
+:root {
+    --background-color: #f4f7fa;
+    --surface-color: #ffffff;
+    --primary-color: #007bff;
+    --primary-hover-color: #0056b3;
+    --text-color: #333;
+    --border-color: #dee2e6;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    --border-radius: 8px;
 }
 
-/* --- Rubrik --- */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 24px;
+    box-sizing: border-box;
+    line-height: 1.6;
+}
+
 h1 {
-  text-align: center;
-  font-size: 3em;
+    text-align: center;
+    color: var(--text-color);
+    font-weight: 700;
+    margin-bottom: 24px;
 }
 
-/* --- Huvudcontainer --- */
+/* --- Main Layout --- */
 .container {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  width: 80%;
-  height: 75vh;
-  margin: auto;
-  padding: 20px 0;
-  gap: 20px;
+    display: flex;
+    flex-direction: row;
+    gap: 24px;
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
 }
 
-/* --- Map + export --- */
 .map-and-export-wrapper {
-  width: 35%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+    flex: 3; /* Map takes more space */
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
+.checkbox-and-controls-wrapper {
+    flex: 1; /* Checkbox list takes less space */
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 250px;
+}
+
+/* --- Header / State Buttons --- */
+.state-buttons-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px;
+    background-color: var(--surface-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+    max-width: 1600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* --- Map Container --- */
 #mapContainer {
-  width: 100%;
-  height: 100%;
-  border: 1px solid #000;
-  overflow: hidden;
-  cursor: grab;
-  position: relative;
-  outline: none;
+    position: relative;
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    overflow: hidden; /* Important for zoom/pan */
+    cursor: grab;
+    height: 80vh; /* Make it responsive to viewport height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-#mapContainer:active {
-  cursor: grabbing;
-}
-
-#mapContainer:focus {
-  outline: 3px solid #007bff;
-  outline-offset: 2px;
+#mapContainer:grabbing {
+    cursor: grabbing;
 }
 
 #sweden-map {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  transition: transform 0.3s ease;
-  transform-origin: center center;
-  display: block;
-  margin: auto;
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    transition: transform 0.1s ease-out; /* Smooth pan/zoom */
 }
 
-/* --- Zoom controls --- */
-.zoom-controls {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.zoom-btn {
-  width: 32px;
-  height: 32px;
-  border: 1px solid #ccc;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 4px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s ease;
-  user-select: none;
-}
-
-.zoom-btn:hover {
-  background-color: rgba(255, 255, 255, 1);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  transform: translateY(-1px);
-}
-
-.zoom-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.zoom-btn:focus {
-  outline: 2px solid #007bff;
-  outline-offset: 2px;
-}
-
-.zoom-in { color: #28a745; }
-.zoom-out { color: #dc3545; }
-.zoom-reset { color: #6c757d; font-size: 16px; }
-
-/* --- Checkbox och kontroller --- */
-.checkbox-and-controls-wrapper {
-  width: 65%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
+/* --- Checkbox List --- */
 #checkbox-list {
-  width: 100%;
-  height: 100%;
-  overflow-x: auto;    /* Horisontell scroll */
-  overflow-y: hidden;  /* Ingen vertikal scroll, kolumnerna fyller vertikalt */
-  background-color: #f0f0f0;
-  border: 1px solid #000;
-  padding: 10px;
-  box-sizing: border-box;
-  display: flex;
-  gap: 12px;
-  white-space: nowrap;
-}
-
-.checkbox-column {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 180px; /* Justera bredden på kolumnen efter behov */
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    overflow-y: auto; /* Make the list scrollable */
+    flex-grow: 1; /* Allow it to fill available space */
 }
 
 #checkbox-list label {
-  display: flex;       /* Flex i kolumnen */
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  padding: 4px 6px;
-  user-select: none;
-}
-
-#checkbox-list input[type="checkbox"] {
-  margin-right: 8px;
-  cursor: pointer;
-}
-
-#checkbox-list input[type="checkbox"]:focus {
-  outline: 2px solid #007bff;
-  outline-offset: 1px;
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 14px;
 }
 
 #checkbox-list label:hover {
-  background-color: rgba(0, 123, 255, 0.1);
-  border-radius: 3px;
+    background-color: #f0f0f0;
 }
 
-#checkbox-list label:focus-within {
-  outline: 2px solid #007bff;
-  outline-offset: 1px;
-  border-radius: 3px;
+#checkbox-list input[type="checkbox"] {
+    margin-right: 10px;
+    cursor: pointer;
+    /* Modern checkbox style */
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    position: relative;
+    transition: all 0.2s;
 }
 
-/* --- Checkbox control buttons --- */
-.checkbox-controls-container {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 10px;
-  width: 100%;
+#checkbox-list input[type="checkbox"]:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+#checkbox-list input[type="checkbox"]:checked::after {
+    content: '✔';
+    color: white;
+    font-size: 12px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 /* --- Buttons --- */
 button {
-  padding: 10px 14px;
-  font-size: 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 16px;
+    border-radius: var(--border-radius);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--surface-color);
+    color: var(--primary-color);
+    border-color: var(--border-color);
 }
 
 button:hover {
-  background-color: #45a049;
+    background-color: #f8f9fa;
+    border-color: #ced4da;
 }
 
-button:focus {
-  outline: 2px solid #007bff;
-  outline-offset: 2px;
+/* Primary action buttons */
+.save-btn, .load-btn, #load-all-states-btn, .export-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
 }
 
-/* Button classes */
-.save-btn { background-color: #9FCC3B; color: #000; }
-.load-btn { background-color: #F2C418; color: #000; }
-.export-btn { background-color: #9FCC3B; color: #000; }
-
-/* --- State buttons --- */
-.state-buttons-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
+.save-btn:hover, .load-btn:hover, #load-all-states-btn:hover, .export-btn:hover {
+    background-color: var(--primary-hover-color);
+    border-color: var(--primary-hover-color);
 }
 
-/* --- Responsivitet --- */
-@media (max-width: 700px) {
-  .container {
+.checkbox-controls-container, .export-btn-container {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+/* --- Zoom Controls --- */
+.zoom-controls {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    display: flex;
     flex-direction: column;
-    width: 95%;
-    gap: 15px;
-  }
-  .map-and-export-wrapper,
-  .checkbox-and-controls-wrapper {
-    width: 100%;
-  }
+    gap: 8px;
+    z-index: 10;
 }
 
+.zoom-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    line-height: 1;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+.zoom-btn:hover {
+    background-color: white;
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 992px) {
+    body {
+        padding: 16px;
+    }
+    .container {
+        flex-direction: column;
+    }
+    #mapContainer {
+        height: 60vh; /* Adjust height for smaller screens */
+    }
+    .checkbox-and-controls-wrapper {
+        min-width: unset;
+        max-height: 40vh; /* Give it a max height so it doesn't dominate the screen */
+    }
+}
+
+@media (max-width: 768px) {
+    h1 {
+        font-size: 24px;
+    }
+    .state-buttons-container {
+        padding: 12px;
+    }
+    button {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+}
