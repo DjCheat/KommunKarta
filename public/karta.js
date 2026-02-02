@@ -117,12 +117,12 @@ const checkboxList = document.getElementById('checkbox-list');
 const tooltip = document.getElementById('map-tooltip');
 const kommunSearchInput = document.getElementById('kommun-search');
 const searchCountSpan = document.getElementById('search-count');
-const sortSelect = document.getElementById('sort-select');
 
 // Global Data Store
 let allKommunData = {};
 let allRegionData = {}; // För att cachea län/regioner
 let globalKommunerMap = {}; // För att komma åt kommun-namn globalt
+let currentSortMode = 'region';
 
 // Theme Management
 function initTheme() {
@@ -277,49 +277,7 @@ function renderGroupedCheckboxList(regions) {
 
 // Render Checkbox List based on Sort Select
 function renderCheckboxListBasedOnSort() {
-    const sortMode = sortSelect ? sortSelect.value : 'region';
-
-    if (sortMode === 'region') {
-        renderGroupedCheckboxList(allRegionData);
-    } else {
-        renderFlatCheckboxList(allKommunData);
-    }
-
-    // Använd sökfilter om det finns något
-    if (kommunSearchInput && kommunSearchInput.value) {
-        kommunSearchInput.dispatchEvent(new Event('input'));
-    }
-
-    // Återställ checked state
-    restoreCheckboxState();
-}
-
-function renderFlatCheckboxList(data) {
-    checkboxList.innerHTML = '';
-
-    const kommunKoder = Object.keys(data).filter(k => k.length === 4); // Endast kommuner
-    // Sortera A-Ö
-    kommunKoder.sort((a, b) => {
-        const nameA = data[a];
-        const nameB = data[b];
-        return nameA.localeCompare(nameB, 'sv');
-    });
-
-    const listColumn = document.createElement('div');
-    listColumn.className = 'checkbox-column flat-list';
-    listColumn.style.width = '100%';
-
-    kommunKoder.forEach(code => {
-        const item = createCheckboxItem(code, data[code]);
-        listColumn.appendChild(item);
-    });
-
-    checkboxList.appendChild(listColumn);
-}
-
-// Render Checkbox List based on Sort Select
-function renderCheckboxListBasedOnSort() {
-    const sortMode = sortSelect ? sortSelect.value : 'region';
+    const sortMode = currentSortMode;
 
     if (sortMode === 'region') {
         renderGroupedCheckboxList(allRegionData);
@@ -1105,59 +1063,6 @@ function initializeCache() {
     }
 }
 
-// Setup Search functionality
-function setupSearch(kommuner) {
-    if (!kommunSearchInput) return;
-
-    kommunSearchInput.addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase().trim();
-        let matchCount = 0;
-
-        // Hämta alla region-grupper och deras checkboxes
-        const groups = document.querySelectorAll('.region-group');
-        let hasVisibleGroup = false;
-
-        groups.forEach(group => {
-            const labels = group.querySelectorAll('label');
-            let groupHasMatch = false;
-
-            // Om söksträngen är tom, visa allt
-            if (!query) {
-                group.style.display = 'flex';
-                labels.forEach(l => l.style.display = 'flex');
-                matchCount += labels.length;
-                hasVisibleGroup = true;
-                groupHasMatch = true;
-            } else {
-                // Sök matchningar inom gruppen
-                labels.forEach(label => {
-                    const name = label.dataset.kommunName;
-                    const code = label.dataset.kommunCode;
-
-                    if (name.includes(query) || code.includes(query)) {
-                        label.style.display = 'flex';
-                        matchCount++;
-                        groupHasMatch = true;
-                    } else {
-                        label.style.display = 'none';
-                    }
-                });
-
-                // Göm hela gruppen om inga kommuner matchar
-                group.style.display = groupHasMatch ? 'flex' : 'none';
-                if (groupHasMatch) hasVisibleGroup = true;
-            }
-            // Hantera förälder till gruppen (checkbox-column)
-            if (group.parentElement && group.parentElement.classList.contains('checkbox-column')) {
-                group.parentElement.style.display = groupHasMatch ? 'flex' : 'none';
-            }
-        });
-
-        if (searchCountSpan) {
-            searchCountSpan.textContent = query ? `${matchCount} träffar` : '';
-        }
-    });
-}
 
 // Setup Map Hover interactions
 function setupMapInteractions(kommunDataMap) {
@@ -1300,11 +1205,32 @@ function setupJsonExportImport() {
 
 // Setup Search functionality
 function setupSearch(kommuner, regions) {
-    if (sortSelect) {
-        sortSelect.addEventListener('change', () => {
-            renderCheckboxListBasedOnSort();
+    // Clear search button logic
+    const clearBtn = document.getElementById('clear-search-btn');
+    if (clearBtn && kommunSearchInput) {
+        clearBtn.addEventListener('click', () => {
+            kommunSearchInput.value = '';
+            kommunSearchInput.dispatchEvent(new Event('input'));
+            kommunSearchInput.focus();
         });
     }
+
+    // Sort toggle buttons logic
+    const sortBtns = document.querySelectorAll('.sort-toggle-btn');
+    sortBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const newSortMode = btn.dataset.sort;
+            if (newSortMode === currentSortMode) return;
+
+            currentSortMode = newSortMode;
+
+            // Update UI
+            sortBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            renderCheckboxListBasedOnSort();
+        });
+    });
 
     if (!kommunSearchInput) return;
 
@@ -1313,27 +1239,32 @@ function setupSearch(kommuner, regions) {
         let matchCount = 0;
 
         // Determine current view mode to filter correctly
-        const sortMode = sortSelect ? sortSelect.value : 'region';
+        const sortMode = currentSortMode;
 
         if (sortMode === 'region') {
             // Region mode search
             const groups = document.querySelectorAll('.region-group');
 
             groups.forEach(group => {
-                const labels = group.querySelectorAll('label');
+                const regionHeaderLabel = group.querySelector('.region-header-label');
+                const regionName = regionHeaderLabel ? regionHeaderLabel.innerText.toLowerCase() : '';
+                const regionMatches = query && regionName.includes(query);
+
+                const kommunLabels = group.querySelectorAll('label:not(.region-header-label)');
                 let groupHasMatch = false;
 
                 if (!query) {
                     group.style.display = 'flex';
-                    labels.forEach(l => l.style.display = 'flex');
-                    matchCount += labels.length;
+                    if (regionHeaderLabel) regionHeaderLabel.style.display = 'flex';
+                    kommunLabels.forEach(l => l.style.display = 'flex');
+                    matchCount += kommunLabels.length;
                     groupHasMatch = true;
                 } else {
-                    labels.forEach(label => {
-                        const name = label.dataset.kommunName;
-                        const code = label.dataset.kommunCode;
+                    kommunLabels.forEach(label => {
+                        const name = label.dataset.kommunName || '';
+                        const code = label.dataset.kommunCode || '';
 
-                        if (name.includes(query) || code.includes(query)) {
+                        if (regionMatches || name.includes(query) || code.includes(query)) {
                             label.style.display = 'flex';
                             matchCount++;
                             groupHasMatch = true;
@@ -1341,7 +1272,14 @@ function setupSearch(kommuner, regions) {
                             label.style.display = 'none';
                         }
                     });
-                    group.style.display = groupHasMatch ? 'flex' : 'none';
+
+                    // Show group if any kommun matches OR if region name matches
+                    const showGroup = groupHasMatch || regionMatches;
+                    group.style.display = showGroup ? 'flex' : 'none';
+                    if (regionHeaderLabel) regionHeaderLabel.style.display = showGroup ? 'flex' : 'none';
+
+                    // Update groupHasMatch for parent column logic
+                    groupHasMatch = showGroup;
                 }
 
                 // Hantera föräldern (checkbox-column)
@@ -1353,8 +1291,8 @@ function setupSearch(kommuner, regions) {
             // Flat mode search
             const labels = document.querySelectorAll('.flat-list label');
             labels.forEach(label => {
-                const name = label.dataset.kommunName;
-                const code = label.dataset.kommunCode;
+                const name = label.dataset.kommunName || '';
+                const code = label.dataset.kommunCode || '';
                 if (!query || name.includes(query) || code.includes(query)) {
                     label.style.display = 'flex';
                     matchCount++;

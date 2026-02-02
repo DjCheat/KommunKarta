@@ -123,13 +123,24 @@
 
         <div class="checkbox-and-controls-wrapper">
             <div class="search-container">
-                <input type="text" id="kommun-search" placeholder="Sök kommun eller län..."
-                    aria-label="Sök kommun eller län">
-                <select id="sort-select" class="sort-select" aria-label="Sortera lista">
-                    <option value="region">Länsvis</option>
-                    <option value="alpha">A-Ö</option>
-                </select>
-                <span id="search-count" class="search-count"></span>
+                <div class="search-input-wrapper">
+                    <input type="text" id="kommun-search" placeholder="Sök kommun eller län..."
+                        aria-label="Sök kommun eller län">
+                    <button id="clear-search-btn" class="clear-btn" title="Rensa sökning"
+                        aria-label="Rensa sökning">&times;</button>
+                    <span id="search-count" class="search-count"></span>
+                </div>
+                <div class="sort-toggle-group">
+                    <button id="sort-region-btn" class="sort-toggle-btn active" data-sort="region"
+                        title="Sortera länsvis">
+                        <span class="sort-icon">📍</span>
+                        <span class="sort-text">Länsvis</span>
+                    </button>
+                    <button id="sort-alpha-btn" class="sort-toggle-btn" data-sort="alpha" title="Sortera A-Ö">
+                        <span class="sort-icon">🔤</span>
+                        <span class="sort-text">A-Ö</span>
+                    </button>
+                </div>
             </div>
 
             <div id="checkbox-list" class="grouped-list" role="list" aria-label="Lista över Sveriges kommuner">

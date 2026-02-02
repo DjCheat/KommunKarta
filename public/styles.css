@@ -187,13 +187,19 @@ h1 {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.search-input-wrapper {
   position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
 }
 
 #kommun-search {
   width: 100%;
   padding: 12px 16px;
-  padding-right: 80px;
+  padding-right: 110px;
   font-size: 14px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -209,34 +215,81 @@ h1 {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
+.clear-btn {
+  position: absolute;
+  right: 76px;
+  background: transparent;
+  border: none;
+  box-shadow: none !important;
+  font-size: 22px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0 8px;
+  display: none;
+  transition: color var(--transition-fast);
+  line-height: 1;
+}
+
+.clear-btn:hover {
+  color: var(--text-secondary);
+  transform: none !important;
+}
+
+#kommun-search:not(:placeholder-shown)+.clear-btn {
+  display: block;
+}
+
 .search-count {
   position: absolute;
   right: 16px;
   font-size: 12px;
   color: var(--text-muted);
   pointer-events: none;
-}
-
-.sort-select {
-  padding: 10px 14px;
-  font-size: 13px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  outline: none;
-}
-
-.sort-select:hover {
   background: var(--bg-muted);
-  border-color: var(--border-color-dark);
+  padding: 2px 8px;
+  border-radius: 10px;
 }
 
-.sort-select:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+.sort-toggle-group {
+  display: flex;
+  background: var(--bg-muted);
+  padding: 4px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  gap: 2px;
+  box-shadow: var(--shadow-sm);
+}
+
+.sort-toggle-btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  box-shadow: none !important;
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+  gap: 6px !important;
+}
+
+.sort-toggle-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  transform: none !important;
+}
+
+[data-theme="dark"] .sort-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sort-toggle-btn.active {
+  background: var(--bg-card);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm) !important;
+  font-weight: 600;
+}
+
+.sort-icon {
+  font-size: 14px;
 }
 
 
