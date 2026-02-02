@@ -1,69 +1,104 @@
-
 <!DOCTYPE html>
 <html lang="sv">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Interaktiv karta över Sveriges kommuner med möjlighet att markera, spara och exportera kommunurval.">
+    <meta name="description"
+        content="Interaktiv karta över Sveriges kommuner med möjlighet att markera, spara och exportera kommunurval.">
     <title>Sverigekarta - Sveriges kommuner</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
-    <h1>Sveriges kommuner</h1> <!-- Lägg till en rubrik på sidan -->
+    <!-- Header with Title and Theme Toggle -->
+    <div class="app-header">
+        <h1>Sveriges kommuner</h1>
+        <div class="header-actions">
+            <div class="color-picker-wrapper">
+                <input type="color" id="map-color-picker" value="#138943" title="Välj färg för markerade kommuner">
+                <button id="reset-color-btn" class="reset-mini-btn" title="Återställ färg">↺</button>
+            </div>
+            <button id="theme-toggle-btn" class="theme-btn" title="Växla tema" aria-label="Växla mörkt/ljust läge">
+                <span class="theme-icon-sun">☀</span>
+                <span class="theme-icon-moon">☾</span>
+            </button>
+        </div>
+    </div>
 
 
     <!-- Tillståndshanterare -->
     <div class="state-manager">
         <div class="state-manager-header">
-            <h2>Sparade urval</h2>
+            <h2>Mina sparade kartor</h2>
         </div>
         <div class="state-save-form">
-            <input type="text" id="custom-state-name" placeholder="Namn på nytt urval..." maxlength="50">
-            <button id="save-custom-btn" class="save-btn">Spara</button>
+            <input type="text" id="custom-state-name" placeholder="Ge din karta ett namn..." maxlength="50">
+            <button id="save-custom-btn" class="save-btn">Spara karta</button>
         </div>
+
         <div id="saved-states-list" class="saved-states-list">
             <!-- Dynamiskt genererad lista -->
         </div>
         <div class="state-manager-footer">
-            <button id="load-all-states-btn" class="load-all-btn">Ladda alla urval</button>
+            <button id="load-all-states-btn" class="load-all-btn">Visa alla sparade</button>
         </div>
     </div>
 
     <div class="container"> <!-- Lägg till en container runt kartan och checkbox-listan -->
         <div class="map-and-export-wrapper">
-            <div id="mapContainer" tabindex="0" role="application" aria-label="Interaktiv karta över Sveriges kommuner"> <!-- En behållare för att möjliggöra zoom och panorering -->
+            <div id="mapContainer" tabindex="0" role="application" aria-label="Interaktiv karta över Sveriges kommuner">
+                <!-- En behållare för att möjliggöra zoom och panorering -->
                 <!-- Zoom controls in lower right corner -->
                 <div class="zoom-controls">
                     <button id="zoom-in-btn" class="zoom-btn zoom-in" title="Zooma in" aria-label="Zooma in">+</button>
-                    <button id="zoom-out-btn" class="zoom-btn zoom-out" title="Zooma ut" aria-label="Zooma ut">−</button>
+                    <button id="zoom-out-btn" class="zoom-btn zoom-out" title="Zooma ut"
+                        aria-label="Zooma ut">−</button>
                 </div>
-                
+
                 <svg id="sweden-map" width="600" height="1200" role="img" aria-label="Karta över Sveriges kommuner">
                     <!-- SVG-innehåll laddas dynamiskt via JavaScript -->
                 </svg>
             </div> <!-- Stäng div-taggen för mapContainer -->
-            
-            <!-- Export button centered below the map -->
+
+            <!-- Export buttons centered below the map -->
             <div class="export-btn-container">
-                <button id="export-btn" class="export-btn">Exportera som SVG</button>
+                <button id="export-json-btn" class="action-btn secondary-btn" title="Spara din karta som en fil">Spara
+                    som fil</button>
+                <button id="import-json-btn" class="action-btn secondary-btn" title="Ladda upp en sparad kartfil">Öppna
+                    fil</button>
+                <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                <button id="export-btn" class="action-btn primary-btn">Spara som bild</button>
             </div>
         </div>
 
         <div class="checkbox-and-controls-wrapper">
-            <div id="checkbox-list" role="list" aria-label="Lista över Sveriges kommuner">
+            <div class="search-container">
+                <input type="text" id="kommun-search" placeholder="Sök kommun eller län..."
+                    aria-label="Sök kommun eller län">
+                <select id="sort-select" class="sort-select" aria-label="Sortera lista">
+                    <option value="region">Länsvis</option>
+                    <option value="alpha">A-Ö</option>
+                </select>
+                <span id="search-count" class="search-count"></span>
+            </div>
+
+            <div id="checkbox-list" class="grouped-list" role="list" aria-label="Lista över Sveriges kommuner">
                 <!-- Checkboxlistan genereras dynamiskt med JavaScript -->
             </div>
-            
+
             <!-- Checkbox control buttons centered below the list -->
             <div class="checkbox-controls-container">
                 <button id="check-all-btn">Markera alla</button>
+                <div id="selection-counter"></div>
                 <button id="uncheck-all-btn">Avmarkera alla</button>
             </div>
         </div>
     </div> <!-- Stäng div-taggen för container -->
 
+    <div id="map-tooltip" class="map-tooltip"></div>
     <script src="karta.js"></script>
 </body>
-</html>
 
+</html>

@@ -8,8 +8,8 @@
   --color-primary-light: #3b82f6;
 
   /* Kommunfärger */
-  --color-selected: #10b981;
-  --color-selected-dark: #059669;
+  --color-selected: #138943;
+  --color-selected-dark: #0e6b35;
   --color-unselected: #e2e8f0;
 
   /* Knappfärger */
@@ -49,6 +49,38 @@
   --transition-fast: 150ms ease;
   --transition-normal: 200ms ease;
   --transition-slow: 300ms ease;
+
+  /* Dark Mode Palette (Default overridden via JS) */
+  --bg-body-dark: #0f172a;
+  --bg-card-dark: #1e293b;
+  --bg-muted-dark: #334155;
+  --text-primary-dark: #f8fafc;
+  --text-secondary-dark: #cbd5e1;
+  --text-muted-dark: #94a3b8;
+  --border-color-dark-mode: #334155;
+}
+
+/* ============================================
+   RESET & BASE
+   ============================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] {
+  --bg-body: var(--bg-body-dark);
+  --bg-card: var(--bg-card-dark);
+  --bg-muted: var(--bg-muted-dark);
+  --border-color: var(--border-color-dark-mode);
+  --border-color-dark: #475569;
+  --text-primary: var(--text-primary-dark);
+  --text-secondary: var(--text-secondary-dark);
+  --text-muted: var(--text-muted-dark);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3);
 }
 
 /* ============================================
@@ -69,29 +101,150 @@ body {
   background: var(--bg-body);
   color: var(--text-primary);
   line-height: 1.5;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
 }
+
+/* ============================================
+   HEADER
+   ============================================ */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1600px;
+  width: 95%;
+  margin: 0 auto 3px;
+  padding: 3px 18px;
+  background: var(--bg-card);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  border-top: none;
+}
+
+h1 {
+  margin: 0;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.color-picker-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+}
+
+/* Theme Toggle */
+.theme-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--bg-muted);
+  color: var(--text-primary);
+  font-size: 16px;
+  border: 1px solid var(--border-color);
+}
+
+.theme-btn:hover {
+  background: var(--border-color);
+  transform: rotate(15deg);
+}
+
+[data-theme="dark"] .theme-icon-sun {
+  display: inline;
+}
+
+[data-theme="dark"] .theme-icon-moon {
+  display: none;
+}
+
+[data-theme="light"] .theme-icon-sun {
+  display: none;
+}
+
+[data-theme="light"] .theme-icon-moon {
+  display: inline;
+}
+
+/* ============================================
+   SEARCH & CONTROLS
+   ============================================ */
+.search-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+#kommun-search {
+  width: 100%;
+  padding: 12px 16px;
+  padding-right: 80px;
+  font-size: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+#kommun-search:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.search-count {
+  position: absolute;
+  right: 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.sort-select {
+  padding: 10px 14px;
+  font-size: 13px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.sort-select:hover {
+  background: var(--bg-muted);
+  border-color: var(--border-color-dark);
+}
+
+.sort-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
 
 /* ============================================
    TYPOGRAPHY
    ============================================ */
-h1 {
-  margin: 0 0 16px 0;
-  padding: 20px 20px 0;
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  text-align: center;
-}
+/* h1 styles moved to HEADER section above */
 
-h1::after {
-  content: '';
-  display: block;
-  width: 60px;
-  height: 4px;
-  margin: 12px auto 0;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-selected));
-  border-radius: 2px;
-}
 
 /* ============================================
    LAYOUT
@@ -230,22 +383,28 @@ h1::after {
 /* ============================================
    CHECKBOX LIST
    ============================================ */
+/* ============================================
+   CHECKBOX LIST
+   ============================================ */
 #checkbox-list {
   flex: 1;
   display: flex;
+  flex-direction: column;
+  /* Stack vertically */
   gap: 16px;
   padding: 16px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md);
-  overflow-x: auto;
-  overflow-y: hidden;
-  white-space: nowrap;
+  overflow-y: auto;
+  /* Enable vertical scroll */
+  overflow-x: hidden;
 }
 
 #checkbox-list::-webkit-scrollbar {
-  height: 8px;
+  width: 8px;
+  /* Vertical scrollbar width */
 }
 
 #checkbox-list::-webkit-scrollbar-track {
@@ -266,7 +425,7 @@ h1::after {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 160px;
+  width: 100%;
 }
 
 #checkbox-list label {
@@ -287,14 +446,14 @@ h1::after {
 }
 
 #checkbox-list label.checked {
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(19, 137, 67, 0.1);
   color: var(--color-selected-dark);
   font-weight: 500;
 }
 
 @supports selector(:has(*)) {
   #checkbox-list label:has(input:checked) {
-    background: rgba(16, 185, 129, 0.1);
+    background: rgba(19, 137, 67, 0.1);
     color: var(--color-selected-dark);
     font-weight: 500;
   }
@@ -336,7 +495,7 @@ h1::after {
 
 #checkbox-list input[type="checkbox"]:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 0 0 3px rgba(19, 137, 67, 0.2);
 }
 
 #checkbox-list label:focus-within {
@@ -413,10 +572,9 @@ button:focus {
    ============================================ */
 .checkbox-controls-container {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .checkbox-controls-container button {
@@ -428,6 +586,23 @@ button:focus {
 .checkbox-controls-container button:hover {
   background: var(--bg-muted);
   border-color: var(--border-color-dark);
+}
+
+#selection-counter {
+  padding: 8px 20px;
+  font-size: 14px;
+  text-align: center;
+  color: var(--text-secondary);
+  background: var(--bg-muted);
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+#selection-counter.has-selection {
+  color: var(--color-selected-dark);
+  background: rgba(19, 137, 67, 0.1);
+  font-weight: 500;
 }
 
 .export-btn-container {
@@ -501,6 +676,54 @@ button:focus {
   white-space: nowrap;
 }
 
+/* Color Picker (Moved to Header) */
+#map-color-picker {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+  background: none;
+  box-shadow: 0 0 0 1px var(--border-color-dark);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+#map-color-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+#map-color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+
+#map-color-picker:hover {
+  transform: scale(1.1);
+}
+
+.reset-mini-btn {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.reset-mini-btn:hover {
+  color: var(--color-primary);
+  transform: rotate(-45deg);
+}
+
 .saved-states-list {
   display: flex;
   flex: 1;
@@ -571,6 +794,113 @@ button:focus {
   white-space: nowrap;
 }
 
+/* ============================================
+   TOOLTIP
+   ============================================ */
+.map-tooltip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-size: 12px;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+  white-space: nowrap;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.map-tooltip.visible {
+  opacity: 1;
+}
+
+/* ============================================
+   ACTION BUTTONS
+   ============================================ */
+.action-btn {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.primary-btn {
+  background: var(--color-primary);
+  color: white;
+}
+
+.primary-btn:hover {
+  background: var(--color-primary-dark);
+}
+
+.secondary-btn {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.secondary-btn:hover {
+  background: var(--bg-muted);
+  border-color: var(--border-color-dark);
+}
+
+/* ============================================
+   GROUPED LIST HEADERS
+   ============================================ */
+.list-group-header {
+  font-weight: 700;
+  color: var(--text-primary);
+  padding: 8px 4px;
+  margin-top: 8px;
+  border-bottom: 2px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.group-toggle-btn {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.group-toggle-btn:hover {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+/* Region header checkbox styles */
+.region-header-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  width: 100%;
+}
+
+.group-toggle-checkbox {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.region-header-label span {
+  flex: 1;
+}
+
 .state-actions {
   display: flex;
   flex-shrink: 0;
@@ -599,7 +929,7 @@ button:focus {
 }
 
 .state-load-btn:hover {
-  background: rgba(16, 185, 129, 0.15);
+  background: rgba(19, 137, 67, 0.15);
   border-color: var(--color-selected);
   transform: none;
   box-shadow: none;
@@ -619,26 +949,6 @@ button:focus {
 
 .state-manager-footer {
   flex-shrink: 0;
-}
-
-/* ============================================
-   SELECTION COUNTER
-   ============================================ */
-#selection-counter {
-  padding: 8px 16px;
-  font-size: 14px;
-  text-align: center;
-  color: var(--text-secondary);
-  background: var(--bg-muted);
-  border-radius: var(--radius-md);
-  margin-bottom: 8px;
-  transition: all var(--transition-fast);
-}
-
-#selection-counter.has-selection {
-  color: var(--color-selected-dark);
-  background: rgba(16, 185, 129, 0.1);
-  font-weight: 500;
 }
 
 /* ============================================
@@ -712,7 +1022,7 @@ button:focus {
 
 .toast-success .toast-icon {
   color: var(--color-selected);
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(19, 137, 67, 0.1);
 }
 
 .toast-error .toast-icon {
@@ -943,6 +1253,11 @@ button:focus {
   }
 
   .checkbox-controls-container button {
+    width: 100%;
+  }
+
+  #selection-counter {
+    order: -1;
     width: 100%;
   }
 

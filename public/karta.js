@@ -97,20 +97,10 @@ function updateSelectionCounter() {
     const checkboxes = document.querySelectorAll('#checkbox-list input[type="checkbox"]');
     const checked = document.querySelectorAll('#checkbox-list input[type="checkbox"]:checked');
 
-    let counter = document.getElementById('selection-counter');
-    if (!counter) {
-        // Skapa counter om den inte finns
-        const controlsContainer = document.querySelector('.checkbox-controls-container');
-        if (controlsContainer) {
-            counter = document.createElement('div');
-            counter.id = 'selection-counter';
-            controlsContainer.insertBefore(counter, controlsContainer.firstChild);
-        }
-    }
-
+    const counter = document.getElementById('selection-counter');
     if (counter) {
-        counter.textContent = `${checked.length} av ${checkboxes.length} kommuner valda`;
-        counter.className = checked.length > 0 ? 'selection-counter has-selection' : 'selection-counter';
+        counter.textContent = `${checked.length} av ${checkboxes.length} kommuner markerade`;
+        counter.className = checked.length > 0 ? 'has-selection' : '';
     }
 }
 
@@ -118,15 +108,39 @@ function updateSelectionCounter() {
 // MAIN APPLICATION CODE
 // ============================================
 
-// Hämta SVG-elementet för kartan (used for initial injection)
+// Hämta element
 const svgMap = document.getElementById('sweden-map');
-
-// Hämta checkboxlistan
 const checkboxList = document.getElementById('checkbox-list');
+const tooltip = document.getElementById('map-tooltip');
+const kommunSearchInput = document.getElementById('kommun-search');
+const searchCountSpan = document.getElementById('search-count');
+const sortSelect = document.getElementById('sort-select');
+
+// Global Data Store
+let allKommunData = {};
+let allRegionData = {}; // För att cachea län/regioner
+
+// Theme Management
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+        });
+    }
+}
 
 // Asynkron initialisering av kartan
 async function initializeMap() {
     try {
+        initTheme();
+
         // Hämta kommun-data och SVG parallellt
         const [kommunResponse, svgResponse] = await Promise.all([
             fetch('kommuner.json'),
@@ -140,66 +154,56 @@ async function initializeMap() {
         const data = await kommunResponse.json();
         const svgData = await svgResponse.text();
 
+        // Spara data globalt för sökning etc.
+        allKommunData = data;
+
+        // Parsa ut län och kommuner
+        // JSON-struktur: "01": "Stockholms län" (Kort nyckel = län), "0180": "Stockholm" (Lång nyckel = kommun)
+        const regions = {};
+        const kommuner = {};
+
+        Object.keys(data).forEach(key => {
+            if (key.length === 2 && !isNaN(key)) {
+                regions[key] = { name: data[key], code: key, kommuner: [] };
+            } else if (key.length === 4 && !isNaN(key)) {
+                let regionCode = key.substring(0, 2);
+                kommuner[key] = { name: data[key], code: key, regionCode: regionCode };
+            }
+        });
+
+        // Koppla kommuner till regioner
+        Object.values(kommuner).forEach(kommun => {
+            if (regions[kommun.regionCode]) {
+                regions[kommun.regionCode].kommuner.push(kommun);
+            }
+        });
+
+        allRegionData = regions;
+
         // Lägg till SVG-filen i dokumentet
         svgMap.innerHTML = svgData;
 
-        // Hämta kommunkoderna i ordning från JSON-data och sortera dem i bokstavsordning (svenska)
-        const kommunKoder = Object.keys(data).sort((a, b) => {
-            const kommunNamnA = data[a] || '';
-            const kommunNamnB = data[b] || '';
-            return kommunNamnA.localeCompare(kommunNamnB, 'sv', { sensitivity: 'base' });
-        });
+        // Rendera Lista baserat på sortering (standard: region)
+        renderCheckboxListBasedOnSort();
 
-        // Återställ checkbox-tillstånd från localStorage (if previously saved)
-        const savedCheckboxState = JSON.parse(localStorage.getItem('checkboxState')) || {};
+        // Koppla händelselyssnare för tooltip och hover
+        setupMapInteractions(kommuner);
 
-        // Loopa igenom varje kommun i den sorterade ordningen
-        kommunKoder.forEach(kommunKod => {
-            const kommunNamn = data[kommunKod];
-            let kommun = document.getElementById(kommunKod);
+        // Setup Sök
+        setupSearch(kommuner, regions);
 
-            // Om kommunen inte hittades direkt, försök hitta den inuti grupperade objekt
-            if (!kommun) {
-                kommun = document.querySelector(`g[id="${kommunKod}"]`);
-            }
+        // Setup Spara/Öppna fil
+        setupJsonExportImport();
 
-            if (kommun) {
-                // Skapa checkboxar för varje kommun
-                // Använd unikt ID för checkbox (med prefix) för att undvika konflikt med SVG-element
-                const checkboxId = 'cb-' + kommunKod;
+        // Läs in senaste kartvyn
+        restoreCheckboxState();
 
-                const label = document.createElement('label');
-                label.htmlFor = checkboxId;
-                label.style.cursor = 'pointer';
-                label.style.userSelect = 'none';
+        // Initiera färgväljaren
+        updateSelectedColor(KOMMUN_COLOR_SELECTED, true);
 
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.value = kommunKod;
-                checkbox.id = checkboxId;
-                checkbox.addEventListener('change', toggleKommunColor);
-
-                // Restore saved state if any
-                if (savedCheckboxState[kommunKod]) {
-                    checkbox.checked = true;
-                }
-
-                // Lägg till checkbox och text i label
-                label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(kommunNamn));
-                checkboxList.appendChild(label);
-
-                // Uppdatera kommunens färg baserat på checkboxens tillstånd
-                toggleKommunColor({ target: checkbox });
-            }
-        });
-
-        // Vänta på att layouten ska vara klar innan vi justerar
-        setTimeout(() => {
-            adjustCheckboxListLayout();
-            centerMapInContainer();
-            updateSelectionCounter();
-        }, 100);
+        // Initial count update
+        updateSelectionCounter();
+        centerMapInContainer();
 
     } catch (error) {
         console.error('Fel vid initialisering av kartan:', error);
@@ -207,13 +211,239 @@ async function initializeMap() {
     }
 }
 
+function renderGroupedCheckboxList(regions) {
+    checkboxList.innerHTML = '';
+
+    // Sortera regioner på namn
+    const sortedRegions = Object.values(regions).sort((a, b) => a.name.localeCompare(b.name, 'sv'));
+
+    sortedRegions.forEach(region => {
+        // Skapa container för länet
+        const regionContainer = document.createElement('div');
+        regionContainer.className = 'region-group';
+        regionContainer.dataset.regionCode = region.code;
+        regionContainer.style.display = 'flex';
+        regionContainer.style.flexDirection = 'column';
+        regionContainer.style.gap = '4px';
+        regionContainer.style.minWidth = '200px';
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'list-group-header';
+        header.innerHTML = `
+            <label class="region-header-label">
+                <input type="checkbox" class="group-toggle-checkbox" data-region="${region.code}" title="Markera/avmarkera hela länet">
+                <span>${region.name}</span>
+            </label>
+        `;
+
+        // Koppla event för "Markera hela länet"
+        header.querySelector('.group-toggle-checkbox').addEventListener('change', (e) => {
+            toggleRegion(region.code, e.target);
+        });
+
+        regionContainer.appendChild(header);
+
+        // Sortera kommuner i länet
+        region.kommuner.sort((a, b) => a.name.localeCompare(b.name, 'sv'));
+
+        region.kommuner.forEach(kommun => {
+            const label = createCheckboxItem(kommun.code, kommun.name);
+            regionContainer.appendChild(label);
+        });
+
+        const listColumn = document.createElement('div');
+        listColumn.className = 'checkbox-column';
+        listColumn.appendChild(regionContainer);
+
+        checkboxList.appendChild(listColumn);
+    });
+}
+
+// Render Checkbox List based on Sort Select
+function renderCheckboxListBasedOnSort() {
+    const sortMode = sortSelect ? sortSelect.value : 'region';
+
+    if (sortMode === 'region') {
+        renderGroupedCheckboxList(allRegionData);
+    } else {
+        renderFlatCheckboxList(allKommunData);
+    }
+
+    // Använd sökfilter om det finns något
+    if (kommunSearchInput && kommunSearchInput.value) {
+        kommunSearchInput.dispatchEvent(new Event('input'));
+    }
+
+    // Återställ checked state
+    restoreCheckboxState();
+}
+
+function renderFlatCheckboxList(data) {
+    checkboxList.innerHTML = '';
+
+    const kommunKoder = Object.keys(data).filter(k => k.length === 4); // Endast kommuner
+    // Sortera A-Ö
+    kommunKoder.sort((a, b) => {
+        const nameA = data[a];
+        const nameB = data[b];
+        return nameA.localeCompare(nameB, 'sv');
+    });
+
+    const listColumn = document.createElement('div');
+    listColumn.className = 'checkbox-column flat-list';
+    listColumn.style.width = '100%';
+
+    kommunKoder.forEach(code => {
+        const item = createCheckboxItem(code, data[code]);
+        listColumn.appendChild(item);
+    });
+
+    checkboxList.appendChild(listColumn);
+}
+
+// Render Checkbox List based on Sort Select
+function renderCheckboxListBasedOnSort() {
+    const sortMode = sortSelect ? sortSelect.value : 'region';
+
+    if (sortMode === 'region') {
+        renderGroupedCheckboxList(allRegionData);
+    } else {
+        renderFlatCheckboxList(allKommunData);
+    }
+
+    // Använd sökfilter om det finns något
+    if (kommunSearchInput && kommunSearchInput.value) {
+        kommunSearchInput.dispatchEvent(new Event('input'));
+    }
+
+    // Återställ checked state
+    restoreCheckboxState();
+}
+
+function renderFlatCheckboxList(data) {
+    checkboxList.innerHTML = '';
+
+    const kommunKoder = Object.keys(data).filter(k => k.length === 4); // Endast kommuner
+    // Sortera A-Ö
+    kommunKoder.sort((a, b) => {
+        const nameA = data[a];
+        const nameB = data[b];
+        return nameA.localeCompare(nameB, 'sv');
+    });
+
+    const listColumn = document.createElement('div');
+    listColumn.className = 'checkbox-column flat-list';
+    listColumn.style.width = '100%';
+
+    kommunKoder.forEach(code => {
+        const item = createCheckboxItem(code, data[code]);
+        listColumn.appendChild(item);
+    });
+
+    checkboxList.appendChild(listColumn);
+}
+
+function createCheckboxItem(code, name) {
+    const checkboxId = 'cb-' + code;
+    const label = document.createElement('label');
+    label.htmlFor = checkboxId;
+    label.dataset.kommunName = name.toLowerCase(); // För sök
+    label.dataset.kommunCode = code;
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = code;
+    checkbox.id = checkboxId;
+    checkbox.addEventListener('change', toggleKommunColor);
+
+    label.appendChild(checkbox);
+    label.appendChild(document.createTextNode(name));
+    return label;
+}
+
+function toggleRegion(regionCode, checkbox) {
+    // Hämta alla kommuner i regionen
+    const inputs = document.querySelectorAll(`.region-group[data-region-code="${regionCode}"] input[type="checkbox"]`);
+    const newState = checkbox.checked;
+
+    inputs.forEach(input => {
+        if (input.checked !== newState) {
+            input.checked = newState;
+            const event = new Event('change');
+            input.dispatchEvent(event);
+        }
+    });
+}
+
+function restoreCheckboxState() {
+    const savedCheckboxState = JSON.parse(localStorage.getItem('checkboxState')) || {};
+    Object.keys(savedCheckboxState).forEach(kommunKod => {
+        if (savedCheckboxState[kommunKod]) {
+            const cb = document.getElementById('cb-' + kommunKod);
+            if (cb) {
+                cb.checked = true;
+                toggleKommunColor({ target: cb });
+            }
+        }
+    });
+}
+
 // Starta initialiseringen
 initializeMap();
 
 
 // Färger för kommuner (matchar CSS-variabler)
-const KOMMUN_COLOR_SELECTED = '#10b981';
+const DEFAULT_KOMMUN_COLOR = '#138943';
+let KOMMUN_COLOR_SELECTED = localStorage.getItem('selectedColor') || DEFAULT_KOMMUN_COLOR;
 const KOMMUN_COLOR_UNSELECTED = '#e2e8f0';
+
+// Funktion för att uppdatera vald färg
+function updateSelectedColor(newColor, skipSave = false) {
+    KOMMUN_COLOR_SELECTED = newColor;
+    if (!skipSave) {
+        localStorage.setItem('selectedColor', newColor);
+    }
+
+    // Uppdatera CSS-variabler för att matcha nya färgen
+    document.documentElement.style.setProperty('--color-selected', newColor);
+
+    // Beräkna en mörkare variant för text/kontrast
+    const darker = adjustColor(newColor, -20);
+    document.documentElement.style.setProperty('--color-selected-dark', darker);
+
+    // Uppdatera färgvaljarens värde i UI om det behövs
+    const colorPicker = document.getElementById('map-color-picker');
+    if (colorPicker && colorPicker.value !== newColor) {
+        colorPicker.value = newColor;
+    }
+
+    // Uppdatera alla markerade kommuner på kartan
+    const checkedCheckboxes = document.querySelectorAll('#checkbox-list input[type="checkbox"]:checked');
+    checkedCheckboxes.forEach(checkbox => {
+        toggleKommunColor({ target: checkbox });
+    });
+}
+
+// Hjälpfunktion för att mörka ner/ljusa upp en hex-färg
+function adjustColor(hex, percent) {
+    // Validera hex-format
+    if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex;
+
+    let r = parseInt(hex.slice(1, 3), 16);
+    let g = parseInt(hex.slice(3, 5), 16);
+    let b = parseInt(hex.slice(5, 7), 16);
+
+    r = Math.floor(r * (100 + percent) / 100);
+    g = Math.floor(g * (100 + percent) / 100);
+    b = Math.floor(b * (100 + percent) / 100);
+
+    r = Math.min(255, Math.max(0, r));
+    g = Math.min(255, Math.max(0, g));
+    b = Math.min(255, Math.max(0, b));
+
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
 
 // Funktion för att ändra färg på kommun baserat på checkboxstatus
 function toggleKommunColor(event) {
@@ -320,7 +550,7 @@ function saveState(stateName, button = null) {
         };
 
         localStorage.setItem(`kommunkarta_${sanitizedStateName}`, JSON.stringify(stateData));
-        showToast(`"${sanitizedStateName}" har sparats med ${checkedCount} kommuner!`, 'success');
+        showToast(`Kartan "${sanitizedStateName}" har sparats!`, 'success');
         updateSavedStatesList();
     } catch (error) {
         console.error('Failed to save state:', error);
@@ -366,7 +596,7 @@ function loadState(stateName, button = null) {
         });
 
         const checkedCount = document.querySelectorAll('#checkbox-list input[type="checkbox"]:checked').length;
-        showToast(`"${stateName}" har laddats (${checkedCount} kommuner)`, 'success');
+        showToast(`Kartvyn "${stateName}" visas nu`, 'success');
         updateSelectionCounter();
     } catch (error) {
         console.error('Failed to load state:', error);
@@ -427,14 +657,14 @@ function loadMultipleStates(stateNames, button = null) {
 
         if (loadedStates > 0) {
             const checkedCount = document.querySelectorAll('#checkbox-list input[type="checkbox"]:checked').length;
-            showToast(`${loadedStates} av ${totalStates} tillstånd laddades (${checkedCount} kommuner)`, 'success');
+            showToast(`${loadedStates} sparade kartor öppnades`, 'success');
         } else {
-            showToast('Inga sparade tillstånd hittades.', 'warning');
+            showToast('Inga sparade kartor hittades.', 'warning');
         }
         updateSelectionCounter();
     } catch (error) {
         console.error('Failed to load multiple states:', error);
-        showToast('Kunde inte ladda tillstånden.', 'error');
+        showToast('Kunde inte öppna de sparade kartorna.', 'error');
     } finally {
         if (button) setButtonLoading(button, false);
     }
@@ -481,7 +711,7 @@ function updateSavedStatesList() {
     const states = getSavedStates();
 
     if (states.length === 0) {
-        container.innerHTML = '<p class="no-states">Inga sparade tillstånd</p>';
+        container.innerHTML = '<p class="no-states">Inga sparade kartor än</p>';
         return;
     }
 
@@ -491,7 +721,7 @@ function updateSavedStatesList() {
             <div class="saved-state-item" data-state="${state.name}">
                 <div class="state-info">
                     <span class="state-name">${state.name}</span>
-                    <span class="state-meta">${state.checkedCount} kommuner${date ? ' • ' + date : ''}</span>
+                    <span class="state-meta">${state.checkedCount} markerade${date ? ' • ' + date : ''}</span>
                 </div>
                 <div class="state-actions">
                     <button class="state-load-btn" data-state="${state.name}" title="Ladda">▶</button>
@@ -600,7 +830,7 @@ function saveCustomState() {
 
     const name = input.value.trim();
     if (!name) {
-        showToast('Ange ett namn för tillståndet', 'warning');
+        showToast('Ge din karta ett namn...', 'warning');
         input.focus();
         return;
     }
@@ -625,7 +855,7 @@ function setupButtonListeners() {
     // Export button
     const exportBtn = document.getElementById('export-btn');
     if (exportBtn) {
-        exportBtn.addEventListener('click', function() {
+        exportBtn.addEventListener('click', function () {
             exportMap(this);
         });
     }
@@ -656,19 +886,36 @@ function setupButtonListeners() {
     // Load all states button
     const loadAllBtn = document.getElementById('load-all-states-btn');
     if (loadAllBtn) {
-        loadAllBtn.addEventListener('click', function() {
+        loadAllBtn.addEventListener('click', function () {
             const states = getSavedStates();
             const stateNames = states.map(s => s.name);
             if (stateNames.length > 0) {
                 loadMultipleStates(stateNames, this);
             } else {
-                showToast('Inga sparade tillstånd att ladda', 'warning');
+                showToast('Inga sparade kartor att visa', 'warning');
             }
         });
     }
 
     // Initialize saved states list
     updateSavedStatesList();
+
+    // Color picker listener
+    const colorPicker = document.getElementById('map-color-picker');
+    if (colorPicker) {
+        colorPicker.addEventListener('input', (e) => {
+            updateSelectedColor(e.target.value);
+        });
+    }
+
+    // Reset color listener
+    const resetColorBtn = document.getElementById('reset-color-btn');
+    if (resetColorBtn) {
+        resetColorBtn.addEventListener('click', () => {
+            updateSelectedColor(DEFAULT_KOMMUN_COLOR);
+            showToast('Färgen har återställts till standard', 'info', 2000);
+        });
+    }
 }
 
 // Anropa setupButtonListeners när DOM är redo
@@ -701,71 +948,260 @@ function initializeCache() {
     }
 }
 
-// Ny funktion: justera checkbox-listans layout och höjd så den matchar kartcontainer
-function adjustCheckboxListLayout() {
-    initializeCache();
-    if (!checkboxList) return;
+// Setup Search functionality
+function setupSearch(kommuner) {
+    if (!kommunSearchInput) return;
 
-    // Hämta alla labels (kan vara direkt i checkboxList eller i en wrapper)
-    const labels = Array.from(checkboxList.querySelectorAll('label'));
+    kommunSearchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        let matchCount = 0;
 
-    if (labels.length === 0) return;
+        // Hämta alla region-grupper och deras checkboxes
+        const groups = document.querySelectorAll('.region-group');
+        let hasVisibleGroup = false;
 
-    // Rensa checkboxList
-    checkboxList.innerHTML = '';
+        groups.forEach(group => {
+            const labels = group.querySelectorAll('label');
+            let groupHasMatch = false;
 
-    // Hämta checkboxList dimensioner istället för mapContainer
-    const rect = checkboxList.getBoundingClientRect();
+            // Om söksträngen är tom, visa allt
+            if (!query) {
+                group.style.display = 'flex';
+                labels.forEach(l => l.style.display = 'flex');
+                matchCount += labels.length;
+                hasVisibleGroup = true;
+                groupHasMatch = true;
+            } else {
+                // Sök matchningar inom gruppen
+                labels.forEach(label => {
+                    const name = label.dataset.kommunName;
+                    const code = label.dataset.kommunCode;
 
-    // Använd ett rimligt standardvärde om rect.height är 0
-    const containerHeight = rect.height > 100 ? rect.height : 400;
+                    if (name.includes(query) || code.includes(query)) {
+                        label.style.display = 'flex';
+                        matchCount++;
+                        groupHasMatch = true;
+                    } else {
+                        label.style.display = 'none';
+                    }
+                });
 
-    // Uppskatta hur många rader som får plats (ca 32px per rad med padding)
-    const rowHeight = 36;
-    const maxRows = Math.max(5, Math.floor(containerHeight / rowHeight));
+                // Göm hela gruppen om inga kommuner matchar
+                group.style.display = groupHasMatch ? 'flex' : 'none';
+                if (groupHasMatch) hasVisibleGroup = true;
+            }
+            // Hantera förälder till gruppen (checkbox-column)
+            if (group.parentElement && group.parentElement.classList.contains('checkbox-column')) {
+                group.parentElement.style.display = groupHasMatch ? 'flex' : 'none';
+            }
+        });
 
-    // Sortera labels alfabetiskt
-    labels.sort((a, b) => {
-        return a.textContent.localeCompare(b.textContent, 'sv', { sensitivity: 'base' });
+        if (searchCountSpan) {
+            searchCountSpan.textContent = query ? `${matchCount} träffar` : '';
+        }
+    });
+}
+
+// Setup Map Hover interactions
+function setupMapInteractions(kommunDataMap) {
+    if (!svgMap) return;
+
+    // Använd delegation för prestanda
+    svgMap.addEventListener('mousemove', (e) => {
+        const target = e.target;
+        // Kolla om target är en path eller polygon inuti en kommun-grupp eller direkt en path
+        let kommunGroup = target.closest('g') || target;
+        let id = kommunGroup.id;
+
+        // Ibland är id på g elementet felformatterat eller saknas, fallback logic om id inte är 4 tecken
+        if (!id || id.length !== 4) {
+            // Försök hitta kommun-ID via parent om target är en path utan ID
+            return;
+        }
+
+        const kommun = kommunDataMap[id];
+
+        if (kommun) {
+            showTooltip(e, kommun.name);
+            // Highlight effekt kan läggas till här om man vill
+            target.style.opacity = '0.8';
+        }
     });
 
-    // Beräkna antal kolumner baserat på antal labels och max rader
-    const cols = Math.ceil(labels.length / maxRows);
-    const rows = Math.ceil(labels.length / cols);
+    svgMap.addEventListener('mouseout', (e) => {
+        hideTooltip();
+        e.target.style.opacity = '1';
+    });
 
-    // Skapa wrapper för horisontell scroll
-    const wrapper = document.createElement('div');
-    wrapper.style.display = 'flex';
-    wrapper.style.gap = '16px';
-    wrapper.style.height = '100%';
-    wrapper.style.overflowX = 'auto';
-    wrapper.style.overflowY = 'hidden';
-    wrapper.style.paddingRight = '8px';
+    // Klick på kartan -> Toggle checkbox
+    svgMap.addEventListener('click', (e) => {
+        let kommunGroup = e.target.closest('g') || e.target;
+        let id = kommunGroup.id;
 
-    // Skapa kolumner och fyll vertikalt först
-    for (let c = 0; c < cols; c++) {
-        const colDiv = document.createElement('div');
-        colDiv.className = 'checkbox-column';
-        colDiv.style.display = 'flex';
-        colDiv.style.flexDirection = 'column';
-        colDiv.style.gap = '4px';
-        colDiv.style.flex = '0 0 auto';
-        colDiv.style.minWidth = '160px';
-
-        for (let r = 0; r < rows; r++) {
-            const index = r + c * rows;
-            if (labels[index]) {
-                colDiv.appendChild(labels[index]);
+        if (id && id.length === 4) {
+            const checkbox = document.getElementById('cb-' + id);
+            if (checkbox) {
+                checkbox.click();
             }
         }
+    });
+}
 
-        // Lägg bara till kolumnen om den har innehåll
-        if (colDiv.children.length > 0) {
-            wrapper.appendChild(colDiv);
-        }
+function showTooltip(e, text) {
+    if (!tooltip) return;
+    tooltip.textContent = text;
+    tooltip.classList.add('visible');
+
+    // Positionera tooltip
+    const x = e.pageX + 10;
+    const y = e.pageY + 10;
+
+    // Förhindra overflow utanför skärm
+    tooltip.style.left = `${Math.min(x, window.innerWidth - 150)}px`;
+    tooltip.style.top = `${Math.min(y, window.innerHeight - 50)}px`;
+}
+
+function hideTooltip() {
+    if (tooltip) tooltip.classList.remove('visible');
+}
+
+// JSON Import/Export
+function setupJsonExportImport() {
+    const exportBtn = document.getElementById('export-json-btn');
+    const importBtn = document.getElementById('import-json-btn');
+    const fileInput = document.getElementById('import-file-input');
+
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+            const checkedCheckboxes = document.querySelectorAll('#checkbox-list input[type="checkbox"]:checked');
+            const selection = {};
+            checkedCheckboxes.forEach(cb => {
+                selection[cb.value] = true;
+            });
+
+            const dataStr = JSON.stringify(selection, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `min-karta-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            showToast('Kartan sparad som fil', 'success');
+        });
     }
 
-    checkboxList.appendChild(wrapper);
+    if (importBtn && fileInput) {
+        importBtn.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const importedData = JSON.parse(event.target.result);
+                    // Rensa nuvarande
+                    uncheckAllCheckboxes();
+
+                    let count = 0;
+                    Object.keys(importedData).forEach(code => {
+                        const cb = document.getElementById('cb-' + code);
+                        if (cb) {
+                            cb.checked = true;
+                            // Trigger färgändring
+                            toggleKommunColor({ target: cb });
+                            count++;
+                        }
+                    });
+
+                    showToast(`Kartvyn öppnades (${count} markerade kommuner)`, 'success');
+                    updateSelectionCounter();
+                } catch (err) {
+                    console.error('JSON Parse error', err);
+                    showToast('Kunde inte läsa filen', 'error');
+                }
+                fileInput.value = ''; // Reset
+            };
+            reader.readAsText(file);
+        });
+    }
+}
+
+// Setup Search functionality
+function setupSearch(kommuner, regions) {
+    if (sortSelect) {
+        sortSelect.addEventListener('change', () => {
+            renderCheckboxListBasedOnSort();
+        });
+    }
+
+    if (!kommunSearchInput) return;
+
+    kommunSearchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        let matchCount = 0;
+
+        // Determine current view mode to filter correctly
+        const sortMode = sortSelect ? sortSelect.value : 'region';
+
+        if (sortMode === 'region') {
+            // Region mode search
+            const groups = document.querySelectorAll('.region-group');
+
+            groups.forEach(group => {
+                const labels = group.querySelectorAll('label');
+                let groupHasMatch = false;
+
+                if (!query) {
+                    group.style.display = 'flex';
+                    labels.forEach(l => l.style.display = 'flex');
+                    matchCount += labels.length;
+                    groupHasMatch = true;
+                } else {
+                    labels.forEach(label => {
+                        const name = label.dataset.kommunName;
+                        const code = label.dataset.kommunCode;
+
+                        if (name.includes(query) || code.includes(query)) {
+                            label.style.display = 'flex';
+                            matchCount++;
+                            groupHasMatch = true;
+                        } else {
+                            label.style.display = 'none';
+                        }
+                    });
+                    group.style.display = groupHasMatch ? 'flex' : 'none';
+                }
+
+                // Hantera föräldern (checkbox-column)
+                if (group.parentElement && group.parentElement.classList.contains('checkbox-column')) {
+                    group.parentElement.style.display = groupHasMatch ? 'flex' : 'none';
+                }
+            });
+        } else {
+            // Flat mode search
+            const labels = document.querySelectorAll('.flat-list label');
+            labels.forEach(label => {
+                const name = label.dataset.kommunName;
+                const code = label.dataset.kommunCode;
+                if (!query || name.includes(query) || code.includes(query)) {
+                    label.style.display = 'flex';
+                    matchCount++;
+                } else {
+                    label.style.display = 'none';
+                }
+            });
+        }
+
+        if (searchCountSpan) {
+            searchCountSpan.textContent = query ? `${matchCount} träffar` : '';
+        }
+    });
 }
 
 
@@ -997,7 +1433,7 @@ function handleKeyboardNavigation(event) {
         return;
     }
 
-    switch(key) {
+    switch (key) {
         case 'ArrowUp':
             event.preventDefault();
             panMapByCoordinates(0, -step);
@@ -1042,16 +1478,12 @@ function panMapByCoordinates(dx, dy) {
 }
 
 // Initialize event listeners after DOM loaded
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     initializeCache();
-
-    // Anpassa checkbox-layout vid init och vid resize
-    adjustCheckboxListLayout();
-    window.addEventListener('resize', adjustCheckboxListLayout);
 
     // double click zoom on the SVG map
     if (svgMapElement) {
-        svgMapElement.addEventListener("dblclick", function(event) {
+        svgMapElement.addEventListener("dblclick", function (event) {
             if (event.ctrlKey) {
                 zoomOutOnDoubleClick(event);
             } else {
@@ -1076,7 +1508,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Prevent zoom controls from triggering pan
     const zoomControls = document.querySelector('.zoom-controls');
     if (zoomControls) {
-        zoomControls.addEventListener('mousedown', function(event) {
+        zoomControls.addEventListener('mousedown', function (event) {
             event.stopPropagation(); // Prevent pan from starting when clicking zoom controls
         });
     }
