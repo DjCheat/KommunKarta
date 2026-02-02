@@ -10,7 +10,7 @@
   /* Kommunfärger */
   --color-selected: #138943;
   --color-selected-dark: #0e6b35;
-  --color-unselected: #e2e8f0;
+  --color-unselected: #dee2e6;
 
   /* Knappfärger */
   --color-save-btn: #10b981;
@@ -321,9 +321,71 @@ h1 {
   transition: transform var(--transition-slow);
 }
 
+#sweden-map path,
+#sweden-map polygon {
+  fill: var(--color-unselected);
+  stroke: var(--text-muted);
+  stroke-width: 0.3px;
+  transition: fill var(--transition-normal), opacity var(--transition-fast);
+}
+
 /* ============================================
-   ZOOM CONTROLS
+   MAP OVERLAYS (Stats, Help, Zoom)
    ============================================ */
+.map-overlay {
+  position: absolute;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.stats-overlay {
+  top: 16px;
+  left: 16px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+  /* Låt klick gå igenom till kartan under */
+}
+
+[data-theme="dark"] .stats-overlay {
+  background: rgba(30, 41, 59, 0.7);
+}
+
+.help-overlay {
+  top: 16px;
+  right: 16px;
+}
+
+.help-trigger-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.help-trigger-btn:hover {
+  background: var(--color-primary);
+  color: white;
+  transform: scale(1.1);
+}
+
 .zoom-controls {
   position: absolute;
   bottom: 16px;
@@ -331,45 +393,153 @@ h1 {
   z-index: 10;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 8px;
-  background: var(--bg-card);
+  gap: 4px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
 }
 
+[data-theme="dark"] .zoom-controls {
+  background: rgba(30, 41, 59, 0.6);
+}
+
 .zoom-btn {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   padding: 0;
   border: none;
-  background: var(--bg-card);
+  background: transparent;
   border-radius: var(--radius-md);
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--transition-fast);
-  user-select: none;
+  color: var(--text-primary);
   box-shadow: none;
 }
 
 .zoom-btn:hover {
-  background: var(--bg-muted);
-  transform: scale(1.05);
-  box-shadow: none;
+  background: rgba(0, 0, 0, 0.05);
+  transform: none;
 }
 
-.zoom-btn:active {
-  transform: scale(0.95);
+[data-theme="dark"] .zoom-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.zoom-btn:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-primary-light);
+.recenter-btn {
+  font-size: 14px !important;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 0 !important;
+  height: 32px;
+}
+
+/* ============================================
+   MODAL SYSTEM
+   ============================================ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+  background: var(--bg-card);
+  width: 90%;
+  max-width: 500px;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+}
+
+.modal-header {
+  padding: 16px 24px;
+  background: var(--bg-body);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 4px;
+  line-height: 1;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.help-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.help-list li {
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.help-list code {
+  background: var(--bg-body);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  color: var(--color-primary);
+  font-weight: bold;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .zoom-in {
@@ -443,6 +613,13 @@ h1 {
 
 #checkbox-list label:hover {
   background: var(--bg-muted);
+}
+
+#checkbox-list label.hover-highlight {
+  background: var(--bg-muted);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+  transform: translateX(4px);
 }
 
 #checkbox-list label.checked {
@@ -605,9 +782,71 @@ button:focus {
   font-weight: 500;
 }
 
-.export-btn-container {
+.map-toolbar {
   display: flex;
-  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card);
+  padding: 8px 16px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  margin-top: 16px;
+  width: 100%;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border-color);
+  margin: 0 4px;
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+.toolbar-btn {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid transparent;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  transition: all var(--transition-fast);
+}
+
+.toolbar-btn:hover {
+  background: var(--bg-body);
+  border-color: var(--border-color);
+  transform: translateY(0);
+}
+
+.toolbar-btn i {
+  font-size: 14px;
+}
+
+/* Responsiv toolbar */
+@media (max-width: 768px) {
+  .map-toolbar {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .toolbar-spacer {
+    display: none;
+  }
 }
 
 /* ============================================

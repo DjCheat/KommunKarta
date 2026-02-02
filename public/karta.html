@@ -50,9 +50,21 @@
         <div class="map-and-export-wrapper">
             <div id="mapContainer" tabindex="0" role="application" aria-label="Interaktiv karta över Sveriges kommuner">
                 <!-- En behållare för att möjliggöra zoom och panorering -->
+
+                <!-- Överliggande information på kartan -->
+                <div class="map-overlay stats-overlay" id="map-stats">
+                    <span id="stats-text">Markerade: 0 av 290 (0%)</span>
+                </div>
+
+                <div class="map-overlay help-overlay">
+                    <button id="help-btn" class="help-trigger-btn" title="Hjälp och snabbkommandon">?</button>
+                </div>
+
                 <!-- Zoom controls in lower right corner -->
                 <div class="zoom-controls">
                     <button id="zoom-in-btn" class="zoom-btn zoom-in" title="Zooma in" aria-label="Zooma in">+</button>
+                    <button id="recenter-btn" class="zoom-btn recenter-btn" title="Återställ vy (Centrera)"
+                        aria-label="Centrera karta">🎯</button>
                     <button id="zoom-out-btn" class="zoom-btn zoom-out" title="Zooma ut"
                         aria-label="Zooma ut">−</button>
                 </div>
@@ -62,14 +74,50 @@
                 </svg>
             </div> <!-- Stäng div-taggen för mapContainer -->
 
-            <!-- Export buttons centered below the map -->
-            <div class="export-btn-container">
-                <button id="export-json-btn" class="action-btn secondary-btn" title="Spara din karta som en fil">Spara
-                    som fil</button>
-                <button id="import-json-btn" class="action-btn secondary-btn" title="Ladda upp en sparad kartfil">Öppna
-                    fil</button>
-                <input type="file" id="import-file-input" accept=".json" style="display: none;">
-                <button id="export-btn" class="action-btn primary-btn">Spara som bild</button>
+            <!-- Hjälp-modal (dold som standard) -->
+            <div id="help-modal" class="modal-overlay" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Tips och Snabbkommandon</h3>
+                        <button id="close-help-btn" class="close-btn">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <ul class="help-list">
+                            <li><strong>Multi-val:</strong> Håll ner <code>Shift</code> och klicka på kommuner på kartan
+                                för att markera flera samtidigt utan att släppa.</li>
+                            <li><strong>Panorering:</strong> Klicka och dra på kartan för att flytta runt vyn.</li>
+                            <li><strong>Zoom:</strong> Använd knapparna (+/-) eller rulla med musen över kartan för att
+                                zooma.</li>
+                            <li><strong>Sökning:</strong> Skriv i sökfältet till höger för att snabbt hitta en kommun
+                                eller se alla i ett län.</li>
+                            <li><strong>Dela:</strong> Skapa en länk för att visa precis samma urval och färg för någon
+                                annan.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toolbar below the map -->
+            <div class="map-toolbar">
+                <div class="toolbar-group">
+                    <button id="import-json-btn" class="toolbar-btn" title="Öppna en sparad kartfil">📂 Öppna
+                        fil</button>
+                    <button id="export-json-btn" class="toolbar-btn" title="Spara din karta som en fil">💾 Spara
+                        fil</button>
+                    <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="toolbar-group">
+                    <button id="share-link-btn" class="toolbar-btn" title="Skapa en delningslänk">🔗 Dela länk</button>
+                    <button id="copy-list-btn" class="toolbar-btn" title="Kopiera namnen på alla markerade kommuner">📋
+                        Kopiera lista</button>
+                </div>
+
+                <div class="toolbar-spacer"></div>
+
+                <button id="export-btn" class="action-btn primary-btn">📸 Spara som bild</button>
             </div>
         </div>
 
@@ -91,7 +139,6 @@
             <!-- Checkbox control buttons centered below the list -->
             <div class="checkbox-controls-container">
                 <button id="check-all-btn">Markera alla</button>
-                <div id="selection-counter"></div>
                 <button id="uncheck-all-btn">Avmarkera alla</button>
             </div>
         </div>
