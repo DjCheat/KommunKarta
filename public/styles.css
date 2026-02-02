@@ -1,45 +1,151 @@
-/* --- Återställ standarder --- */
-body, html {
+/* ============================================
+   CSS CUSTOM PROPERTIES (Design Tokens)
+   ============================================ */
+:root {
+  /* Primärfärger */
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-primary-light: #3b82f6;
+
+  /* Kommunfärger */
+  --color-selected: #10b981;
+  --color-selected-dark: #059669;
+  --color-unselected: #e2e8f0;
+
+  /* Knappfärger */
+  --color-save-btn: #10b981;
+  --color-save-btn-hover: #059669;
+  --color-export-btn: #8b5cf6;
+  --color-export-btn-hover: #7c3aed;
+  --color-danger: #ef4444;
+  --color-danger-hover: #dc2626;
+  --color-warning: #f59e0b;
+
+  /* Bakgrund och ramar */
+  --bg-body: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-muted: #f8fafc;
+  --border-color: #e2e8f0;
+  --border-color-dark: #cbd5e1;
+
+  /* Text */
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+
+  /* Skuggor */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* Rundning */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Animationer */
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+}
+
+/* ============================================
+   RESET & BASE
+   ============================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: Arial, sans-serif;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  line-height: 1.5;
 }
 
-/* --- Rubrik --- */
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
 h1 {
+  margin: 0 0 16px 0;
+  padding: 20px 20px 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
   text-align: center;
-  font-size: 3em;
 }
 
-/* --- Huvudcontainer --- */
+h1::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 4px;
+  margin: 12px auto 0;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-selected));
+  border-radius: 2px;
+}
+
+/* ============================================
+   LAYOUT
+   ============================================ */
 .container {
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  width: 80%;
-  height: 75vh;
-  margin: auto;
-  padding: 20px 0;
-  gap: 20px;
+  align-items: stretch;
+  max-width: 1600px;
+  width: 95%;
+  height: calc(100vh - 180px);
+  min-height: 600px;
+  margin: 0 auto;
+  padding: 24px;
+  gap: 24px;
 }
 
-/* --- Map + export --- */
 .map-and-export-wrapper {
   width: 35%;
+  min-width: 280px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 16px;
+  height: 100%;
 }
 
-#mapContainer {
-  width: 100%;
+.checkbox-and-controls-wrapper {
+  flex: 1;
+  min-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   height: 100%;
-  border: 1px solid #000;
+}
+
+/* ============================================
+   MAP CONTAINER
+   ============================================ */
+#mapContainer {
+  flex: 1;
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
   cursor: grab;
-  position: relative;
   outline: none;
+  transition: box-shadow var(--transition-normal), border-color var(--transition-normal);
+}
+
+#mapContainer:hover {
+  border-color: var(--border-color-dark);
+  box-shadow: var(--shadow-lg);
 }
 
 #mapContainer:active {
@@ -47,178 +153,805 @@ h1 {
 }
 
 #mapContainer:focus {
-  outline: 3px solid #007bff;
-  outline-offset: 2px;
+  outline: none;
+  border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-lg), 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 #sweden-map {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  transition: transform 0.3s ease;
-  transform-origin: center center;
   display: block;
   margin: auto;
+  object-fit: contain;
+  transform-origin: center center;
+  transition: transform var(--transition-slow);
 }
 
-/* --- Zoom controls --- */
+/* ============================================
+   ZOOM CONTROLS
+   ============================================ */
 .zoom-controls {
   position: absolute;
-  bottom: 10px;
-  right: 10px;
+  bottom: 16px;
+  right: 16px;
   z-index: 10;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+  padding: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
 }
 
 .zoom-btn {
-  width: 32px;
-  height: 32px;
-  border: 1px solid #ccc;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 4px;
-  font-size: 16px;
-  font-weight: bold;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  font-size: 18px;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
   user-select: none;
+  box-shadow: none;
 }
 
 .zoom-btn:hover {
-  background-color: rgba(255, 255, 255, 1);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  transform: translateY(-1px);
+  background: var(--bg-muted);
+  transform: scale(1.05);
+  box-shadow: none;
 }
 
 .zoom-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transform: scale(0.95);
 }
 
 .zoom-btn:focus {
-  outline: 2px solid #007bff;
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary-light);
 }
 
-.zoom-in { color: #28a745; }
-.zoom-out { color: #dc3545; }
-.zoom-reset { color: #6c757d; font-size: 16px; }
-
-/* --- Checkbox och kontroller --- */
-.checkbox-and-controls-wrapper {
-  width: 65%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.zoom-in {
+  color: var(--color-selected);
 }
 
+.zoom-out {
+  color: var(--color-danger);
+}
+
+/* ============================================
+   CHECKBOX LIST
+   ============================================ */
 #checkbox-list {
-  width: 100%;
-  height: 100%;
-  overflow-x: auto;    /* Horisontell scroll */
-  overflow-y: hidden;  /* Ingen vertikal scroll, kolumnerna fyller vertikalt */
-  background-color: #f0f0f0;
-  border: 1px solid #000;
-  padding: 10px;
-  box-sizing: border-box;
+  flex: 1;
   display: flex;
-  gap: 12px;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  overflow-x: auto;
+  overflow-y: hidden;
   white-space: nowrap;
+}
+
+#checkbox-list::-webkit-scrollbar {
+  height: 8px;
+}
+
+#checkbox-list::-webkit-scrollbar-track {
+  background: var(--bg-muted);
+  border-radius: 4px;
+}
+
+#checkbox-list::-webkit-scrollbar-thumb {
+  background: var(--border-color-dark);
+  border-radius: 4px;
+}
+
+#checkbox-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 
 .checkbox-column {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 180px; /* Justera bredden på kolumnen efter behov */
+  gap: 4px;
+  min-width: 160px;
 }
 
 #checkbox-list label {
-  display: flex;       /* Flex i kolumnen */
+  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  color: var(--text-primary);
   cursor: pointer;
-  padding: 4px 6px;
   user-select: none;
-}
-
-#checkbox-list input[type="checkbox"] {
-  margin-right: 8px;
-  cursor: pointer;
-}
-
-#checkbox-list input[type="checkbox"]:focus {
-  outline: 2px solid #007bff;
-  outline-offset: 1px;
+  transition: all var(--transition-fast);
 }
 
 #checkbox-list label:hover {
-  background-color: rgba(0, 123, 255, 0.1);
-  border-radius: 3px;
+  background: var(--bg-muted);
+}
+
+#checkbox-list label.checked {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--color-selected-dark);
+  font-weight: 500;
+}
+
+@supports selector(:has(*)) {
+  #checkbox-list label:has(input:checked) {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--color-selected-dark);
+    font-weight: 500;
+  }
+}
+
+#checkbox-list input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  position: relative;
+  border: 2px solid var(--border-color-dark);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+#checkbox-list input[type="checkbox"]:hover {
+  border-color: var(--color-selected);
+}
+
+#checkbox-list input[type="checkbox"]:checked {
+  background: var(--color-selected);
+  border-color: var(--color-selected);
+}
+
+#checkbox-list input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+#checkbox-list input[type="checkbox"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
 }
 
 #checkbox-list label:focus-within {
-  outline: 2px solid #007bff;
-  outline-offset: 1px;
-  border-radius: 3px;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary-light);
 }
 
-/* --- Checkbox control buttons --- */
-.checkbox-controls-container {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 10px;
-  width: 100%;
-}
-
-/* --- Buttons --- */
+/* ============================================
+   BUTTONS (Base)
+   ============================================ */
 button {
-  padding: 10px 14px;
-  font-size: 16px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
 }
 
 button:hover {
-  background-color: #45a049;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+button:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
 button:focus {
-  outline: 2px solid #007bff;
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: var(--shadow-md), 0 0 0 3px rgba(59, 130, 246, 0.3);
 }
 
-/* Button classes */
-.save-btn { background-color: #9FCC3B; color: #000; }
-.load-btn { background-color: #F2C418; color: #000; }
-.export-btn { background-color: #9FCC3B; color: #000; }
+/* Button variants */
+.save-btn {
+  background: linear-gradient(135deg, var(--color-save-btn), var(--color-save-btn-hover));
+  color: white;
+}
 
-/* --- State buttons --- */
-.state-buttons-container {
+.save-btn:hover {
+  background: linear-gradient(135deg, var(--color-save-btn-hover), #047857);
+}
+
+.export-btn {
+  background: linear-gradient(135deg, var(--color-export-btn), var(--color-export-btn-hover));
+  color: white;
+}
+
+.export-btn:hover {
+  background: linear-gradient(135deg, var(--color-export-btn-hover), #6d28d9);
+}
+
+.load-all-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: white;
+  white-space: nowrap;
+}
+
+.load-all-btn:hover {
+  background: linear-gradient(135deg, var(--color-primary-dark), #1e40af);
+}
+
+/* ============================================
+   CHECKBOX CONTROLS
+   ============================================ */
+.checkbox-controls-container {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
 }
 
-/* --- Responsivitet --- */
-@media (max-width: 700px) {
+.checkbox-controls-container button {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.checkbox-controls-container button:hover {
+  background: var(--bg-muted);
+  border-color: var(--border-color-dark);
+}
+
+.export-btn-container {
+  display: flex;
+  justify-content: center;
+}
+
+/* ============================================
+   STATE MANAGER
+   ============================================ */
+.state-manager {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  max-width: 1600px;
+  width: 95%;
+  margin: 0 auto 16px;
+  padding: 12px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+.state-manager-header {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.state-manager-header h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.state-save-form {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.state-save-form input {
+  width: 180px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.state-save-form input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.state-save-form input::placeholder {
+  color: var(--text-muted);
+}
+
+.state-save-form .save-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.saved-states-list {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.saved-states-list::-webkit-scrollbar {
+  height: 6px;
+}
+
+.saved-states-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.saved-states-list::-webkit-scrollbar-thumb {
+  background: var(--border-color-dark);
+  border-radius: 3px;
+}
+
+.no-states {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.saved-state-item {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: default;
+  transition: all var(--transition-fast);
+}
+
+.saved-state-item:hover {
+  border-color: var(--border-color-dark);
+  box-shadow: var(--shadow-sm);
+}
+
+.state-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.state-name {
+  max-width: 120px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.state-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.state-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.state-load-btn,
+.state-delete-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+  transition: all var(--transition-fast);
+}
+
+.state-load-btn {
+  color: var(--color-selected);
+}
+
+.state-load-btn:hover {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: var(--color-selected);
+  transform: none;
+  box-shadow: none;
+}
+
+.state-delete-btn {
+  color: var(--text-muted);
+}
+
+.state-delete-btn:hover {
+  color: var(--color-danger);
+  background: rgba(239, 68, 68, 0.15);
+  border-color: var(--color-danger);
+  transform: none;
+  box-shadow: none;
+}
+
+.state-manager-footer {
+  flex-shrink: 0;
+}
+
+/* ============================================
+   SELECTION COUNTER
+   ============================================ */
+#selection-counter {
+  padding: 8px 16px;
+  font-size: 14px;
+  text-align: center;
+  color: var(--text-secondary);
+  background: var(--bg-muted);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+  transition: all var(--transition-fast);
+}
+
+#selection-counter.has-selection {
+  color: var(--color-selected-dark);
+  background: rgba(16, 185, 129, 0.1);
+  font-weight: 500;
+}
+
+/* ============================================
+   TOAST NOTIFICATIONS
+   ============================================ */
+#toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 280px;
+  max-width: 380px;
+  padding: 14px 18px;
+  background: var(--bg-card);
+  border-left: 4px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  opacity: 0;
+  transform: translateX(100%);
+  pointer-events: auto;
+  transition: all var(--transition-slow);
+}
+
+.toast-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.toast-hiding {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.toast-success {
+  border-left-color: var(--color-selected);
+}
+
+.toast-error {
+  border-left-color: var(--color-danger);
+}
+
+.toast-warning {
+  border-left-color: var(--color-warning);
+}
+
+.toast-info {
+  border-left-color: var(--color-primary);
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  font-size: 18px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.toast-success .toast-icon {
+  color: var(--color-selected);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.toast-error .toast-icon {
+  color: var(--color-danger);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.toast-warning .toast-icon {
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.toast-info .toast-icon {
+  color: var(--color-primary);
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.toast-message {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.toast-close {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 20px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+  transition: all var(--transition-fast);
+}
+
+.toast-close:hover {
+  color: var(--text-primary);
+  background: var(--bg-muted);
+  transform: none;
+  box-shadow: none;
+}
+
+/* ============================================
+   CONFIRM DIALOG
+   ============================================ */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.confirm-overlay.confirm-visible {
+  opacity: 1;
+}
+
+.confirm-dialog {
+  width: 90%;
+  max-width: 360px;
+  padding: 24px;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  transform: scale(0.95);
+  transition: transform 0.2s ease;
+}
+
+.confirm-visible .confirm-dialog {
+  transform: scale(1);
+}
+
+.confirm-message {
+  margin: 0 0 20px;
+  font-size: 15px;
+  color: var(--text-primary);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.confirm-btn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.confirm-cancel {
+  color: var(--text-primary);
+  background: var(--bg-muted);
+  border: 1px solid var(--border-color);
+}
+
+.confirm-cancel:hover {
+  background: var(--border-color);
+  transform: none;
+}
+
+.confirm-delete {
+  color: white;
+  background: var(--color-danger);
+  border: none;
+}
+
+.confirm-delete:hover {
+  background: var(--color-danger-hover);
+  transform: none;
+}
+
+/* ============================================
+   LOADING STATES
+   ============================================ */
+.btn-loading {
+  opacity: 0.7;
+  cursor: wait !important;
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================
+   RESPONSIVE - Tablet
+   ============================================ */
+@media (max-width: 900px) {
+  h1 {
+    padding: 16px 16px 0;
+    font-size: 1.5rem;
+  }
+
   .container {
     flex-direction: column;
-    width: 95%;
-    gap: 15px;
+    height: auto;
+    min-height: auto;
+    padding: 16px;
+    gap: 16px;
   }
+
   .map-and-export-wrapper,
   .checkbox-and-controls-wrapper {
     width: 100%;
   }
+
+  .map-and-export-wrapper {
+    height: 50vh;
+    min-height: 400px;
+  }
+
+  #checkbox-list {
+    height: 300px;
+  }
+
+  button {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .state-manager {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .state-manager-header {
+    justify-content: center;
+  }
+
+  .state-save-form {
+    width: 100%;
+  }
+
+  .state-save-form input {
+    flex: 1;
+    width: auto;
+  }
+
+  .saved-states-list {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .state-manager-footer {
+    width: 100%;
+  }
+
+  .load-all-btn {
+    width: 100%;
+  }
 }
 
+/* ============================================
+   RESPONSIVE - Mobile
+   ============================================ */
+@media (max-width: 500px) {
+  .checkbox-controls-container {
+    flex-direction: column;
+  }
+
+  .checkbox-controls-container button {
+    width: 100%;
+  }
+
+  .state-manager {
+    width: calc(100% - 32px);
+    margin: 0 16px 16px;
+  }
+
+  .state-name {
+    max-width: 100px;
+  }
+}

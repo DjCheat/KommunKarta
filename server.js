@@ -32,10 +32,20 @@ const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
 const RATE_LIMIT_MAX_REQUESTS = 100; // Max requests per window
 
+// Rensa gamla poster från rateLimitMap för att undvika minnesläcka
+setInterval(() => {
+    const now = Date.now();
+    for (const [ip, data] of rateLimitMap) {
+        if (now > data.resetTime) {
+            rateLimitMap.delete(ip);
+        }
+    }
+}, RATE_LIMIT_WINDOW);
+
 app.use((req, res, next) => {
     const clientIP = req.ip || req.connection.remoteAddress;
     const now = Date.now();
-    
+
     if (!rateLimitMap.has(clientIP)) {
         rateLimitMap.set(clientIP, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
     } else {

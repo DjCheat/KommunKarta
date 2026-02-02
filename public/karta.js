@@ -1,97 +1,224 @@
 // karta.js
 
+// ============================================
+// TOAST NOTIFICATION SYSTEM
+// ============================================
+
+// Skapa toast-container om den inte finns
+function getToastContainer() {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+    }
+    return container;
+}
+
+// Visa en toast-notifiering
+function showToast(message, type = 'info', duration = 3000) {
+    const container = getToastContainer();
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+
+    // Ikon baserat på typ
+    const icons = {
+        success: '✓',
+        error: '✕',
+        warning: '⚠',
+        info: 'ℹ'
+    };
+
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || icons.info}</span>
+        <span class="toast-message">${message}</span>
+        <button class="toast-close" aria-label="Stäng">×</button>
+    `;
+
+    // Stäng-knapp funktionalitet
+    const closeBtn = toast.querySelector('.toast-close');
+    closeBtn.addEventListener('click', () => removeToast(toast));
+
+    container.appendChild(toast);
+
+    // Trigger animation
+    requestAnimationFrame(() => {
+        toast.classList.add('toast-visible');
+    });
+
+    // Auto-ta bort efter duration
+    if (duration > 0) {
+        setTimeout(() => removeToast(toast), duration);
+    }
+
+    return toast;
+}
+
+// Ta bort en toast med animation
+function removeToast(toast) {
+    if (!toast || !toast.parentNode) return;
+
+    toast.classList.remove('toast-visible');
+    toast.classList.add('toast-hiding');
+
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 300);
+}
+
+// ============================================
+// LOADING STATE HELPERS
+// ============================================
+
+function setButtonLoading(button, isLoading, originalText = null) {
+    if (!button) return;
+
+    if (isLoading) {
+        button.dataset.originalText = button.textContent;
+        button.disabled = true;
+        button.classList.add('btn-loading');
+        button.innerHTML = '<span class="spinner"></span> Laddar...';
+    } else {
+        button.disabled = false;
+        button.classList.remove('btn-loading');
+        button.textContent = originalText || button.dataset.originalText || 'Klar';
+        delete button.dataset.originalText;
+    }
+}
+
+// ============================================
+// SELECTION COUNTER
+// ============================================
+
+function updateSelectionCounter() {
+    const checkboxes = document.querySelectorAll('#checkbox-list input[type="checkbox"]');
+    const checked = document.querySelectorAll('#checkbox-list input[type="checkbox"]:checked');
+
+    let counter = document.getElementById('selection-counter');
+    if (!counter) {
+        // Skapa counter om den inte finns
+        const controlsContainer = document.querySelector('.checkbox-controls-container');
+        if (controlsContainer) {
+            counter = document.createElement('div');
+            counter.id = 'selection-counter';
+            controlsContainer.insertBefore(counter, controlsContainer.firstChild);
+        }
+    }
+
+    if (counter) {
+        counter.textContent = `${checked.length} av ${checkboxes.length} kommuner valda`;
+        counter.className = checked.length > 0 ? 'selection-counter has-selection' : 'selection-counter';
+    }
+}
+
+// ============================================
+// MAIN APPLICATION CODE
+// ============================================
+
 // Hämta SVG-elementet för kartan (used for initial injection)
 const svgMap = document.getElementById('sweden-map');
 
 // Hämta checkboxlistan
 const checkboxList = document.getElementById('checkbox-list');
 
-// Läs in kommundata från JSON-filen
-fetch('kommuner.json')
-    .then(response => response.json())
-    .then(data => {
-        // Hämta SVG-filen med kommunkoderna
-        fetch('kommunKarta.svg')
-            .then(response => response.text())
-            .then(svgData => {
-                // Lägg till SVG-filen i dokumentet
-                svgMap.innerHTML = svgData;
+// Asynkron initialisering av kartan
+async function initializeMap() {
+    try {
+        // Hämta kommun-data och SVG parallellt
+        const [kommunResponse, svgResponse] = await Promise.all([
+            fetch('kommuner.json'),
+            fetch('kommunKarta.svg')
+        ]);
 
-                // Hämta kommunkoderna i ordning från JSON-data och sortera dem i bokstavsordning (svenska)
-                const kommunKoder = Object.keys(data).sort((a, b) => {
-                    const kommunNamnA = data[a] || '';
-                    const kommunNamnB = data[b] || '';
-                    // Use Swedish locale so å/ä/ö sorteras correctly
-                    return kommunNamnA.localeCompare(kommunNamnB, 'sv', { sensitivity: 'base' });
-                });
+        if (!kommunResponse.ok || !svgResponse.ok) {
+            throw new Error('Kunde inte ladda kartdata');
+        }
 
-                // Center the map in the container on page load
-                setTimeout(() => {
-                    centerMapInContainer();
-                }, 100);
+        const data = await kommunResponse.json();
+        const svgData = await svgResponse.text();
 
-                // Återställ checkbox-tillstånd från localStorage (if previously saved)
-                const savedCheckboxState = JSON.parse(localStorage.getItem('checkboxState')) || {};
+        // Lägg till SVG-filen i dokumentet
+        svgMap.innerHTML = svgData;
 
-                // Loopa igenom varje kommun i den sorterade ordningen
-                kommunKoder.forEach(kommunKod => {
-                    const kommunNamn = data[kommunKod];
-                    let kommun = document.getElementById(kommunKod);
+        // Hämta kommunkoderna i ordning från JSON-data och sortera dem i bokstavsordning (svenska)
+        const kommunKoder = Object.keys(data).sort((a, b) => {
+            const kommunNamnA = data[a] || '';
+            const kommunNamnB = data[b] || '';
+            return kommunNamnA.localeCompare(kommunNamnB, 'sv', { sensitivity: 'base' });
+        });
 
-                    // Om kommunen inte hittades direkt, försök hitta den inuti grupperade objekt
-                    if (!kommun) {
-                        kommun = document.querySelector(`g[id="${kommunKod}"]`);
-                    }
+        // Återställ checkbox-tillstånd från localStorage (if previously saved)
+        const savedCheckboxState = JSON.parse(localStorage.getItem('checkboxState')) || {};
 
-                    if (kommun) {
-                        // Skapa checkboxar för varje kommun
-                        const label = document.createElement('label');
-                        label.htmlFor = kommunKod;
-                        label.textContent = kommunNamn;
-                        label.style.cursor = 'pointer'; // Make it clear the label is clickable
-                        label.style.userSelect = 'none'; // Prevent text selection when clicking
+        // Loopa igenom varje kommun i den sorterade ordningen
+        kommunKoder.forEach(kommunKod => {
+            const kommunNamn = data[kommunKod];
+            let kommun = document.getElementById(kommunKod);
 
-                        const checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.value = kommunKod;
-                        checkbox.id = kommunKod;
-                        checkbox.addEventListener('change', toggleKommunColor);
+            // Om kommunen inte hittades direkt, försök hitta den inuti grupperade objekt
+            if (!kommun) {
+                kommun = document.querySelector(`g[id="${kommunKod}"]`);
+            }
 
-                        // Restore saved state if any
-                        if (savedCheckboxState[kommunKod]) {
-                            checkbox.checked = true;
-                        }
+            if (kommun) {
+                // Skapa checkboxar för varje kommun
+                // Använd unikt ID för checkbox (med prefix) för att undvika konflikt med SVG-element
+                const checkboxId = 'cb-' + kommunKod;
 
-                        // Add click event to label as backup to ensure it works
-                        label.addEventListener('click', function(event) {
-                            // Only trigger if the click wasn't on the checkbox itself
-                            if (event.target !== checkbox) {
-                                checkbox.checked = !checkbox.checked;
-                                toggleKommunColor({ target: checkbox });
-                            }
-                        });
+                const label = document.createElement('label');
+                label.htmlFor = checkboxId;
+                label.style.cursor = 'pointer';
+                label.style.userSelect = 'none';
 
-                        // Insert checkbox before text content for better layout
-                        label.insertBefore(checkbox, label.firstChild);
-                        checkboxList.appendChild(label);
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = kommunKod;
+                checkbox.id = checkboxId;
+                checkbox.addEventListener('change', toggleKommunColor);
 
-                        // Uppdatera kommunens färg baserat på checkboxens tillstånd
-                        toggleKommunColor({ target: checkbox });
-                    }
-                });
+                // Restore saved state if any
+                if (savedCheckboxState[kommunKod]) {
+                    checkbox.checked = true;
+                }
 
-                // Anpassa layouten för checkbox-listan efter att alla checkboxar har skapats
-                adjustCheckboxListLayout();
-                
-             })
-             .catch(error => console.error('Error fetching SVG file:', error));
-     })
-     .catch(error => console.error('Error fetching JSON file:', error));
+                // Lägg till checkbox och text i label
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(kommunNamn));
+                checkboxList.appendChild(label);
 
+                // Uppdatera kommunens färg baserat på checkboxens tillstånd
+                toggleKommunColor({ target: checkbox });
+            }
+        });
+
+        // Vänta på att layouten ska vara klar innan vi justerar
+        setTimeout(() => {
+            adjustCheckboxListLayout();
+            centerMapInContainer();
+            updateSelectionCounter();
+        }, 100);
+
+    } catch (error) {
+        console.error('Fel vid initialisering av kartan:', error);
+        showToast('Kunde inte ladda kartan. Försök ladda om sidan.', 'error', 5000);
+    }
+}
+
+// Starta initialiseringen
+initializeMap();
+
+
+// Färger för kommuner (matchar CSS-variabler)
+const KOMMUN_COLOR_SELECTED = '#10b981';
+const KOMMUN_COLOR_UNSELECTED = '#e2e8f0';
 
 // Funktion för att ändra färg på kommun baserat på checkboxstatus
 function toggleKommunColor(event) {
     const kommunKod = event.target.value;
+    const color = event.target.checked ? KOMMUN_COLOR_SELECTED : KOMMUN_COLOR_UNSELECTED;
 
     // Hämta alla element med kommunens ID (det kan vara enskilda element eller grupperade element)
     const kommuner = document.querySelectorAll(`[id="${kommunKod}"]`);
@@ -99,53 +226,40 @@ function toggleKommunColor(event) {
     kommuner.forEach(kommun => {
         if (kommun.tagName.toLowerCase() === 'g') {
             // Om elementet är en grupp (g), hämta alla polygoner inuti och applicera färg
-            const polygons = kommun.querySelectorAll('polygon, path'); // För att inkludera både polygoner och paths
+            const polygons = kommun.querySelectorAll('polygon, path');
             polygons.forEach(polygon => {
-                if (event.target.checked) {
-                    polygon.style.fill = '#138943'; // Ändra färgen på markerade polygoner
-                } else {
-                    polygon.style.fill = '#ccc'; // Återställ färgen till standard
-                }
+                polygon.style.fill = color;
             });
         } else {
             // Om det är ett enskilt polygon-element, ändra dess färg direkt
-            if (event.target.checked) {
-                kommun.style.fill = '#138943';
-            } else {
-                kommun.style.fill = '#ccc';
-            }
+            kommun.style.fill = color;
         }
     });
 
+    // Uppdatera label-klass för CSS-styling (fallback för :has() selector)
+    const label = event.target.parentElement;
+    if (label && label.tagName.toLowerCase() === 'label') {
+        if (event.target.checked) {
+            label.classList.add('checked');
+        } else {
+            label.classList.remove('checked');
+        }
+    }
+
     // Persist each checkbox change in a simple global state
     saveCheckboxState(event.target.id, event.target.checked);
+
+    // Uppdatera räknaren
+    updateSelectionCounter();
 }
 
 
 // Funktion för att avmarkera alla checkboxar och återställa färgen på alla kommuner
 function uncheckAllCheckboxes() {
     const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
-
     checkboxes.forEach(checkbox => {
         checkbox.checked = false;
-
-        // Hämta kommunens element
-        let kommun = document.getElementById(checkbox.value);
-        
-        if (kommun) {
-            // Om kommunen är en grupp (<g>), återställ färgen för hela gruppen
-            if (kommun.tagName.toLowerCase() === 'g') {
-                kommun.style.fill = '#ccc'; // Återställ färgen till grå
-                // Återställ även färgen för alla polygoner inom gruppen
-                const polygons = kommun.querySelectorAll('polygon');
-                polygons.forEach(polygon => {
-                    polygon.style.fill = '#ccc'; // Återställ färgen till grå
-                });
-            } else {
-                // Om det inte är en grupp, återställ färgen för det enskilda objektet
-                kommun.style.fill = '#ccc';
-            }
-        }
+        toggleKommunColor({ target: checkbox });
     });
 }
 
@@ -162,7 +276,9 @@ function checkAllCheckboxes() {
 
 
 // Funktion för att spara checkbox-tillstånd i localStorage
-function saveCheckboxState(kommunKod, isChecked) {
+function saveCheckboxState(checkboxId, isChecked) {
+    // Ta bort 'cb-' prefixet för att spara med kommun-koden
+    const kommunKod = checkboxId.replace('cb-', '');
     const checkboxState = JSON.parse(localStorage.getItem('checkboxState')) || {};
     checkboxState[kommunKod] = isChecked;
     localStorage.setItem('checkboxState', JSON.stringify(checkboxState));
@@ -170,129 +286,393 @@ function saveCheckboxState(kommunKod, isChecked) {
 
 
 // Funktion för att spara en uppsättning checkbox-tillstånd med ett visst namn
-function saveState(stateName) {
+function saveState(stateName, button = null) {
     // Validate state name
     if (!stateName || typeof stateName !== 'string' || stateName.trim().length === 0) {
-        alert('Invalid state name. Please provide a valid name.');
+        showToast('Ogiltigt namn. Ange ett giltigt namn.', 'error');
         return;
     }
-    
+
     // Sanitize state name to prevent XSS
-    const sanitizedStateName = stateName.trim().replace(/[^a-zA-Z0-9\s]/g, '');
+    const sanitizedStateName = stateName.trim().replace(/[^a-zA-Z0-9\s\-_åäöÅÄÖ]/g, '');
     if (sanitizedStateName !== stateName.trim()) {
-        alert('State name contains invalid characters. Only letters, numbers, and spaces are allowed.');
+        showToast('Namnet innehåller ogiltiga tecken.', 'warning');
         return;
     }
-    
+
+    if (button) setButtonLoading(button, true);
+
     try {
         const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
         const checkboxState = {};
+        let checkedCount = 0;
         checkboxes.forEach(checkbox => {
-            checkboxState[checkbox.id] = checkbox.checked;
+            const kommunKod = checkbox.id.replace('cb-', '');
+            checkboxState[kommunKod] = checkbox.checked;
+            if (checkbox.checked) checkedCount++;
         });
-        localStorage.setItem(sanitizedStateName, JSON.stringify(checkboxState));
-        alert(`State '${sanitizedStateName}' has been saved!`);
+
+        // Spara med metadata
+        const stateData = {
+            state: checkboxState,
+            savedAt: new Date().toISOString(),
+            checkedCount: checkedCount
+        };
+
+        localStorage.setItem(`kommunkarta_${sanitizedStateName}`, JSON.stringify(stateData));
+        showToast(`"${sanitizedStateName}" har sparats med ${checkedCount} kommuner!`, 'success');
+        updateSavedStatesList();
     } catch (error) {
         console.error('Failed to save state:', error);
-        alert('Failed to save state. Please try again or check if you have enough storage space.');
+        showToast('Kunde inte spara. Kontrollera lagringsutrymme.', 'error');
+    } finally {
+        if (button) setButtonLoading(button, false);
     }
 }
 
 // Funktion för att ladda en uppsättning checkbox-tillstånd med ett visst namn
-function loadState(stateName) {
-    // Validate state name
+function loadState(stateName, button = null) {
     if (!stateName || typeof stateName !== 'string' || stateName.trim().length === 0) {
-        alert('Invalid state name. Please provide a valid name.');
+        showToast('Ogiltigt namn.', 'error');
         return;
     }
-    
+
+    if (button) setButtonLoading(button, true);
+
     try {
-        const savedData = localStorage.getItem(stateName);
+        // Försök hitta med nytt prefix först, sedan utan
+        let savedData = localStorage.getItem(`kommunkarta_${stateName}`);
+        let isNewFormat = true;
+
         if (!savedData) {
-            alert(`State '${stateName}' not found in storage.`);
+            savedData = localStorage.getItem(stateName);
+            isNewFormat = false;
+        }
+
+        if (!savedData) {
+            showToast(`"${stateName}" hittades inte.`, 'warning');
+            if (button) setButtonLoading(button, false);
             return;
         }
-        
-        const savedCheckboxState = JSON.parse(savedData);
+
+        const parsed = JSON.parse(savedData);
+        const savedCheckboxState = isNewFormat ? parsed.state : parsed;
+
         const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
         checkboxes.forEach(checkbox => {
-            checkbox.checked = savedCheckboxState[checkbox.id] || false;
-            // Uppdatera färgen på kommunerna baserat på checkbox-tillstånd
+            checkbox.checked = savedCheckboxState[checkbox.value] || false;
             const event = new Event('change');
             checkbox.dispatchEvent(event);
         });
-        alert(`State '${stateName}' has been loaded!`);
+
+        const checkedCount = document.querySelectorAll('#checkbox-list input[type="checkbox"]:checked').length;
+        showToast(`"${stateName}" har laddats (${checkedCount} kommuner)`, 'success');
+        updateSelectionCounter();
     } catch (error) {
         console.error('Failed to load state:', error);
-        alert('Failed to load state. The saved data might be corrupted.');
+        showToast('Kunde inte ladda. Data kan vara korrupt.', 'error');
+    } finally {
+        if (button) setButtonLoading(button, false);
     }
 }
 
 // Funktion för att ladda flera tillstånd och kombinera dem
-function loadMultipleStates(stateNames) {
+function loadMultipleStates(stateNames, button = null) {
     if (!Array.isArray(stateNames) || stateNames.length === 0) {
-        alert('Invalid state names array.');
+        showToast('Inga tillstånd att ladda.', 'warning');
         return;
     }
-    
+
+    if (button) setButtonLoading(button, true);
+
     let combinedCheckboxState = {};
     let loadedStates = 0;
-    let totalStates = stateNames.length;
+    const totalStates = stateNames.length;
 
     try {
-        // Iterera genom varje stateName och kombinera checkbox-tillstånden
         stateNames.forEach(stateName => {
             if (typeof stateName !== 'string' || stateName.trim().length === 0) {
-                console.warn(`Invalid state name: ${stateName}`);
                 return;
             }
-            
-            const savedData = localStorage.getItem(stateName);
+
+            // Försök hitta med nytt prefix först, sedan utan
+            let savedData = localStorage.getItem(`kommunkarta_${stateName}`);
+            let isNewFormat = true;
+
+            if (!savedData) {
+                savedData = localStorage.getItem(stateName);
+                isNewFormat = false;
+            }
+
             if (savedData) {
                 try {
-                    const savedCheckboxState = JSON.parse(savedData);
+                    const parsed = JSON.parse(savedData);
+                    const savedCheckboxState = isNewFormat ? parsed.state : parsed;
                     loadedStates++;
-                    // Slå ihop checkbox-tillstånd (True om någon av tillstånden är true)
                     Object.keys(savedCheckboxState).forEach(kommunKod => {
                         combinedCheckboxState[kommunKod] = combinedCheckboxState[kommunKod] || savedCheckboxState[kommunKod];
                     });
                 } catch (parseError) {
                     console.error(`Failed to parse state ${stateName}:`, parseError);
                 }
-            } else {
-                console.warn(`State '${stateName}' not found in storage.`);
             }
         });
 
-        // Applicera det kombinerade tillståndet på alla checkboxar
         const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
         checkboxes.forEach(checkbox => {
-            checkbox.checked = combinedCheckboxState[checkbox.id] || false;
-            // Uppdatera färgen på kommunerna baserat på checkbox-tillstånd
+            checkbox.checked = combinedCheckboxState[checkbox.value] || false;
             const event = new Event('change');
             checkbox.dispatchEvent(event);
         });
 
         if (loadedStates > 0) {
-            alert(`${loadedStates} out of ${totalStates} states have been loaded and applied!`);
+            const checkedCount = document.querySelectorAll('#checkbox-list input[type="checkbox"]:checked').length;
+            showToast(`${loadedStates} av ${totalStates} tillstånd laddades (${checkedCount} kommuner)`, 'success');
         } else {
-            alert('No valid states found to load.');
+            showToast('Inga sparade tillstånd hittades.', 'warning');
         }
+        updateSelectionCounter();
     } catch (error) {
         console.error('Failed to load multiple states:', error);
-        alert('Failed to load states. Please try again.');
+        showToast('Kunde inte ladda tillstånden.', 'error');
+    } finally {
+        if (button) setButtonLoading(button, false);
     }
 }
 
-// Removed auto-execution - states should only load when user clicks the button
+// ============================================
+// DYNAMIC SAVED STATES MANAGER
+// ============================================
 
-// Event listener för att ladda flera tillstånd när knappen klickas
-const loadAllBtn = document.getElementById('load-all-states-btn');
-if (loadAllBtn) {
-    loadAllBtn.addEventListener('click', function() {
-        loadMultipleStates(['Vision', 'Future', 'Mobile']);
+// Hämta alla sparade tillstånd från localStorage
+function getSavedStates() {
+    const states = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('kommunkarta_')) {
+            const name = key.replace('kommunkarta_', '');
+            try {
+                const data = JSON.parse(localStorage.getItem(key));
+                states.push({
+                    name: name,
+                    key: key,
+                    savedAt: data.savedAt || null,
+                    checkedCount: data.checkedCount || 0
+                });
+            } catch (e) {
+                states.push({ name: name, key: key, savedAt: null, checkedCount: 0 });
+            }
+        }
+    }
+    // Sortera efter datum (nyast först)
+    states.sort((a, b) => {
+        if (!a.savedAt) return 1;
+        if (!b.savedAt) return -1;
+        return new Date(b.savedAt) - new Date(a.savedAt);
+    });
+    return states;
+}
+
+// Uppdatera listan med sparade tillstånd i UI
+function updateSavedStatesList() {
+    const container = document.getElementById('saved-states-list');
+    if (!container) return;
+
+    const states = getSavedStates();
+
+    if (states.length === 0) {
+        container.innerHTML = '<p class="no-states">Inga sparade tillstånd</p>';
+        return;
+    }
+
+    container.innerHTML = states.map(state => {
+        const date = state.savedAt ? new Date(state.savedAt).toLocaleDateString('sv-SE') : '';
+        return `
+            <div class="saved-state-item" data-state="${state.name}">
+                <div class="state-info">
+                    <span class="state-name">${state.name}</span>
+                    <span class="state-meta">${state.checkedCount} kommuner${date ? ' • ' + date : ''}</span>
+                </div>
+                <div class="state-actions">
+                    <button class="state-load-btn" data-state="${state.name}" title="Ladda">▶</button>
+                    <button class="state-delete-btn" data-state="${state.name}" title="Ta bort">×</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Lägg till event listeners för knapparna
+    container.querySelectorAll('.state-load-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            loadState(btn.dataset.state, btn);
+        });
+    });
+
+    container.querySelectorAll('.state-delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteState(btn.dataset.state);
+        });
     });
 }
+
+// Ta bort ett sparat tillstånd med bekräftelse
+function deleteState(stateName) {
+    if (!stateName) return;
+
+    showConfirmDialog(
+        `Vill du ta bort "${stateName}"?`,
+        () => {
+            localStorage.removeItem(`kommunkarta_${stateName}`);
+            showToast(`"${stateName}" har tagits bort`, 'info');
+            updateSavedStatesList();
+        }
+    );
+}
+
+// Visa en bekräftelsedialog
+function showConfirmDialog(message, onConfirm, onCancel = null) {
+    // Ta bort eventuell existerande dialog
+    const existing = document.getElementById('confirm-dialog-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'confirm-dialog-overlay';
+    overlay.className = 'confirm-overlay';
+
+    overlay.innerHTML = `
+        <div class="confirm-dialog">
+            <p class="confirm-message">${message}</p>
+            <div class="confirm-actions">
+                <button class="confirm-btn confirm-cancel">Avbryt</button>
+                <button class="confirm-btn confirm-delete">Ta bort</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Animera in
+    requestAnimationFrame(() => {
+        overlay.classList.add('confirm-visible');
+    });
+
+    const closeDialog = () => {
+        overlay.classList.remove('confirm-visible');
+        setTimeout(() => overlay.remove(), 200);
+    };
+
+    // Event listeners
+    overlay.querySelector('.confirm-cancel').addEventListener('click', () => {
+        closeDialog();
+        if (onCancel) onCancel();
+    });
+
+    overlay.querySelector('.confirm-delete').addEventListener('click', () => {
+        closeDialog();
+        onConfirm();
+    });
+
+    // Stäng vid klick på overlay
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            closeDialog();
+            if (onCancel) onCancel();
+        }
+    });
+
+    // Stäng vid Escape
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            closeDialog();
+            if (onCancel) onCancel();
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+}
+
+// Spara nytt tillstånd med anpassat namn
+function saveCustomState() {
+    const input = document.getElementById('custom-state-name');
+    if (!input) return;
+
+    const name = input.value.trim();
+    if (!name) {
+        showToast('Ange ett namn för tillståndet', 'warning');
+        input.focus();
+        return;
+    }
+
+    const saveBtn = document.getElementById('save-custom-btn');
+    saveState(name, saveBtn);
+    input.value = '';
+}
+
+// ============================================
+// EVENT LISTENERS
+// ============================================
+
+function setupButtonListeners() {
+    // Checkbox control buttons
+    const checkAllBtn = document.getElementById('check-all-btn');
+    const uncheckAllBtn = document.getElementById('uncheck-all-btn');
+
+    if (checkAllBtn) checkAllBtn.addEventListener('click', checkAllCheckboxes);
+    if (uncheckAllBtn) uncheckAllBtn.addEventListener('click', uncheckAllCheckboxes);
+
+    // Export button
+    const exportBtn = document.getElementById('export-btn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function() {
+            exportMap(this);
+        });
+    }
+
+    // Zoom buttons
+    const zoomInBtn = document.getElementById('zoom-in-btn');
+    const zoomOutBtn = document.getElementById('zoom-out-btn');
+
+    if (zoomInBtn) zoomInBtn.addEventListener('click', zoomIn);
+    if (zoomOutBtn) zoomOutBtn.addEventListener('click', zoomOut);
+
+    // Custom state save
+    const saveCustomBtn = document.getElementById('save-custom-btn');
+    if (saveCustomBtn) {
+        saveCustomBtn.addEventListener('click', saveCustomState);
+    }
+
+    // Custom state input - spara vid Enter
+    const customInput = document.getElementById('custom-state-name');
+    if (customInput) {
+        customInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                saveCustomState();
+            }
+        });
+    }
+
+    // Load all states button
+    const loadAllBtn = document.getElementById('load-all-states-btn');
+    if (loadAllBtn) {
+        loadAllBtn.addEventListener('click', function() {
+            const states = getSavedStates();
+            const stateNames = states.map(s => s.name);
+            if (stateNames.length > 0) {
+                loadMultipleStates(stateNames, this);
+            } else {
+                showToast('Inga sparade tillstånd att ladda', 'warning');
+            }
+        });
+    }
+
+    // Initialize saved states list
+    updateSavedStatesList();
+}
+
+// Anropa setupButtonListeners när DOM är redo
+document.addEventListener('DOMContentLoaded', setupButtonListeners);
 
 
 // ZOOM-FUNKTIONER
@@ -324,61 +704,68 @@ function initializeCache() {
 // Ny funktion: justera checkbox-listans layout och höjd så den matchar kartcontainer
 function adjustCheckboxListLayout() {
     initializeCache();
-    if (!checkboxList || !mapContainerElement) return;
+    if (!checkboxList) return;
 
-    const rect = mapContainerElement.getBoundingClientRect();
-
-    // Rensa gamla children
+    // Hämta alla labels (kan vara direkt i checkboxList eller i en wrapper)
     const labels = Array.from(checkboxList.querySelectorAll('label'));
+
+    if (labels.length === 0) return;
+
+    // Rensa checkboxList
     checkboxList.innerHTML = '';
 
-    // Bestäm antal kolumner baserat på containerbredd
-    const approxColWidth = 100; // justera vid behov
-    const cols = Math.max(1, Math.floor(rect.width / approxColWidth));
+    // Hämta checkboxList dimensioner istället för mapContainer
+    const rect = checkboxList.getBoundingClientRect();
 
-    // Sortera labels alfabetiskt vertikalt
+    // Använd ett rimligt standardvärde om rect.height är 0
+    const containerHeight = rect.height > 100 ? rect.height : 400;
+
+    // Uppskatta hur många rader som får plats (ca 32px per rad med padding)
+    const rowHeight = 36;
+    const maxRows = Math.max(5, Math.floor(containerHeight / rowHeight));
+
+    // Sortera labels alfabetiskt
     labels.sort((a, b) => {
         return a.textContent.localeCompare(b.textContent, 'sv', { sensitivity: 'base' });
     });
 
-    // Beräkna antal rader som behövs för vertikal fyllning
+    // Beräkna antal kolumner baserat på antal labels och max rader
+    const cols = Math.ceil(labels.length / maxRows);
     const rows = Math.ceil(labels.length / cols);
 
     // Skapa wrapper för horisontell scroll
     const wrapper = document.createElement('div');
     wrapper.style.display = 'flex';
-    wrapper.style.gap = '12px';
-    wrapper.style.height = '100%'; 
+    wrapper.style.gap = '16px';
+    wrapper.style.height = '100%';
     wrapper.style.overflowX = 'auto';
     wrapper.style.overflowY = 'hidden';
+    wrapper.style.paddingRight = '8px';
 
     // Skapa kolumner och fyll vertikalt först
     for (let c = 0; c < cols; c++) {
         const colDiv = document.createElement('div');
+        colDiv.className = 'checkbox-column';
         colDiv.style.display = 'flex';
         colDiv.style.flexDirection = 'column';
-        colDiv.style.gap = '6px';
-        colDiv.style.flex = '0 0 auto'; // viktig för horisontell scroll
+        colDiv.style.gap = '4px';
+        colDiv.style.flex = '0 0 auto';
+        colDiv.style.minWidth = '160px';
 
         for (let r = 0; r < rows; r++) {
-            const index = r + c * rows; // fyll vertikalt först
+            const index = r + c * rows;
             if (labels[index]) {
                 colDiv.appendChild(labels[index]);
             }
         }
-        wrapper.appendChild(colDiv);
+
+        // Lägg bara till kolumnen om den har innehåll
+        if (colDiv.children.length > 0) {
+            wrapper.appendChild(colDiv);
+        }
     }
 
     checkboxList.appendChild(wrapper);
-
-    // Se till att labels ser bra ut
-    const allLabels = checkboxList.querySelectorAll('label');
-    allLabels.forEach(l => {
-        l.style.display = 'flex';
-        l.style.alignItems = 'center';
-        l.style.gap = '8px';
-        l.style.whiteSpace = 'normal';
-    });
 }
 
 
@@ -393,26 +780,63 @@ function updateTransform() {
     }
 }
 
-// Function to center the map in the container
+// Function to center and fit the map in the container
 function centerMapInContainer() {
     initializeCache();
     if (svgMapElement && mapContainerElement) {
-        // Reset any existing transformations
+        // Reset transformations first
         scale = 1;
         offsetX = 0;
         offsetY = 0;
-        
+        svgMapElement.style.transform = 'none';
+
         // Get container dimensions
         const containerRect = mapContainerElement.getBoundingClientRect();
-        const svgRect = svgMapElement.getBoundingClientRect();
-        
-        // Calculate center offsets (unscaled pixel offsets)
-        const centerX = (containerRect.width - svgRect.width) / 2;
-        const centerY = (containerRect.height - svgRect.height) / 2;
-        
-        // Apply centering
-        offsetX = centerX;
-        offsetY = centerY;
+        const padding = 20; // Padding runt kartan
+
+        // Hämta SVG:ns faktiska dimensioner från viewBox eller attribut
+        const svgElement = svgMapElement.querySelector('svg');
+        let svgWidth, svgHeight;
+
+        if (svgElement) {
+            const viewBox = svgElement.getAttribute('viewBox');
+            if (viewBox) {
+                const parts = viewBox.split(' ');
+                svgWidth = parseFloat(parts[2]) || 600;
+                svgHeight = parseFloat(parts[3]) || 800;
+            } else {
+                svgWidth = parseFloat(svgElement.getAttribute('width')) || 600;
+                svgHeight = parseFloat(svgElement.getAttribute('height')) || 800;
+            }
+        } else {
+            // Fallback - använd getBBox
+            try {
+                const bbox = svgMapElement.getBBox();
+                svgWidth = bbox.width || 600;
+                svgHeight = bbox.height || 800;
+            } catch (e) {
+                svgWidth = 600;
+                svgHeight = 800;
+            }
+        }
+
+        // Beräkna skala för att få plats med hela kartan
+        const availableWidth = containerRect.width - padding * 2;
+        const availableHeight = containerRect.height - padding * 2;
+
+        const scaleX = availableWidth / svgWidth;
+        const scaleY = availableHeight / svgHeight;
+
+        // Använd den mindre skalan för att behålla proportionerna
+        scale = Math.min(scaleX, scaleY, 1); // Max 1 = inte större än originalet
+
+        // Beräkna offset för att centrera kartan
+        const scaledWidth = svgWidth * scale;
+        const scaledHeight = svgHeight * scale;
+
+        offsetX = (containerRect.width - scaledWidth) / 2;
+        offsetY = (containerRect.height - scaledHeight) / 2;
+
         updateTransform();
     }
 }
@@ -673,52 +1097,79 @@ function resetView() {
 }
 
 // Funktion för att exportera kartan som en SVG-fil
-function exportMap() {
+function exportMap(button = null) {
     initializeCache();
-    
+
     if (!svgMapElement) {
-        alert('Map element not found. Cannot export.');
+        showToast('Kartan kunde inte hittas.', 'error');
         return;
     }
-    
+
+    if (button) setButtonLoading(button, true);
+
     try {
         // Spara nuvarande transformation
-        var currentScale = scale;
-        var currentOffsetX = offsetX;
-        var currentOffsetY = offsetY;
+        const currentScale = scale;
+        const currentOffsetX = offsetX;
+        const currentOffsetY = offsetY;
 
-        // Återställ kartan till ursprunglig vy
+        // Återställ kartan till ursprunglig vy temporärt
         resetView();
 
         // Vänta på att återställningen ska slå igenom
-        setTimeout(function() {
+        requestAnimationFrame(() => {
             try {
-                // Skapa en kopia av SVG-elementet
-                var svgCopy = svgMapElement.cloneNode(true);
-                
-                // Hämta bounding box av kartan
-                var bbox = svgMapElement.getBBox();
+                // Hämta den inre SVG:n (den som laddades från kommunKarta.svg)
+                const innerSvg = svgMapElement.querySelector('svg');
 
-                // Sätt viewBox så att det bara omfattar kartan och lite vitt utrymme runtom
-                var padding = 20; // Justera padding efter behov
-                svgCopy.setAttribute("viewBox", (bbox.x - padding) + " " + (bbox.y - padding) + " " + (bbox.width + 2 * padding) + " " + (bbox.height + 2 * padding));
-                
+                if (!innerSvg) {
+                    // Om ingen inre SVG finns, använd svgMapElement direkt
+                    throw new Error('Ingen SVG-karta hittades');
+                }
+
+                // Klona den inre SVG:n
+                const svgCopy = innerSvg.cloneNode(true);
+
+                // Ta bort eventuell transform
+                svgCopy.style.transform = 'none';
+
+                // Försök hämta viewBox från originalet, eller beräkna från innehållet
+                let viewBox = innerSvg.getAttribute('viewBox');
+
+                if (!viewBox) {
+                    // Försök beräkna från getBBox
+                    try {
+                        const bbox = innerSvg.getBBox();
+                        const padding = 20;
+                        viewBox = `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + 2 * padding} ${bbox.height + 2 * padding}`;
+                    } catch (e) {
+                        // Fallback till standardstorlek
+                        viewBox = '0 0 600 800';
+                    }
+                }
+
+                svgCopy.setAttribute('viewBox', viewBox);
+
+                // Sätt width och height för bättre kompatibilitet
+                svgCopy.setAttribute('width', '100%');
+                svgCopy.setAttribute('height', '100%');
+
                 // Skapa en SVG-sträng från kopian av SVG-elementet
-                var svgString = new XMLSerializer().serializeToString(svgCopy);
+                const svgString = new XMLSerializer().serializeToString(svgCopy);
 
                 // Skapa en Blob med den nya SVG-strängen
-                var blob = new Blob([svgString], { type: "image/svg+xml" });
+                const blob = new Blob([svgString], { type: "image/svg+xml" });
 
                 // Skapa en URL från Blob
-                var url = URL.createObjectURL(blob);
+                const url = URL.createObjectURL(blob);
 
                 // Skapa en länk för att ladda ner SVG-filen
-                var a = document.createElement("a");
-                a.href = url;
-                a.download = "sweden-map.svg";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = "sweden-map.svg";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
 
                 // Återkalla URL:en
                 URL.revokeObjectURL(url);
@@ -728,22 +1179,25 @@ function exportMap() {
                 offsetX = currentOffsetX;
                 offsetY = currentOffsetY;
                 updateTransform();
-                
-                alert('Map exported successfully!');
+
+                showToast('Kartan har exporterats som SVG!', 'success');
+                if (button) setButtonLoading(button, false);
             } catch (exportError) {
                 console.error('Export failed:', exportError);
-                alert('Failed to export map. Please try again.');
-                
+                showToast('Kunde inte exportera kartan.', 'error');
+
                 // Restore view even if export failed
                 scale = currentScale;
                 offsetX = currentOffsetX;
                 offsetY = currentOffsetY;
                 updateTransform();
+                if (button) setButtonLoading(button, false);
             }
-        }, 100);
+        });
     } catch (error) {
         console.error('Export initialization failed:', error);
-        alert('Failed to initialize export. Please try again.');
+        showToast('Kunde inte starta exporten.', 'error');
+        if (button) setButtonLoading(button, false);
     }
 }
 

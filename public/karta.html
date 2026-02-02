@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sverigekarta</title>
+    <meta name="description" content="Interaktiv karta över Sveriges kommuner med möjlighet att markera, spara och exportera kommunurval.">
+    <title>Sverigekarta - Sveriges kommuner</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -12,15 +13,21 @@
     <h1>Sveriges kommuner</h1> <!-- Lägg till en rubrik på sidan -->
 
 
-    <div class="state-buttons-container"> <!-- Lägg till en unik klass för den nya containern -->
-        <!-- Knappar för att spara och ladda olika tillstånd -->
-        <button onclick="saveState('Future')" class="save-btn">Spara Future</button>
-        <button onclick="saveState('Mobile')" class="save-btn">Spara Mobile</button>
-        <button onclick="saveState('Vision')" class="save-btn margin-right-100">Spara Vision</button>
-        <button onclick="loadState('Future')" class="load-btn">Ladda Future</button>
-        <button onclick="loadState('Mobile')" class="load-btn">Ladda Mobile</button>
-        <button onclick="loadState('Vision')" class="load-btn">Ladda Vision</button>
-        <button id="load-all-states-btn">Ladda alla produkter</button>
+    <!-- Tillståndshanterare -->
+    <div class="state-manager">
+        <div class="state-manager-header">
+            <h2>Sparade urval</h2>
+        </div>
+        <div class="state-save-form">
+            <input type="text" id="custom-state-name" placeholder="Namn på nytt urval..." maxlength="50">
+            <button id="save-custom-btn" class="save-btn">Spara</button>
+        </div>
+        <div id="saved-states-list" class="saved-states-list">
+            <!-- Dynamiskt genererad lista -->
+        </div>
+        <div class="state-manager-footer">
+            <button id="load-all-states-btn" class="load-all-btn">Ladda alla urval</button>
+        </div>
     </div>
 
     <div class="container"> <!-- Lägg till en container runt kartan och checkbox-listan -->
@@ -28,19 +35,18 @@
             <div id="mapContainer" tabindex="0" role="application" aria-label="Interaktiv karta över Sveriges kommuner"> <!-- En behållare för att möjliggöra zoom och panorering -->
                 <!-- Zoom controls in lower right corner -->
                 <div class="zoom-controls">
-                    <button class="zoom-btn zoom-in" onclick="zoomIn()" title="Zooma in" aria-label="Zooma in">+</button>
-                    <button class="zoom-btn zoom-out" onclick="zoomOut()" title="Zooma ut" aria-label="Zooma ut">−</button>
+                    <button id="zoom-in-btn" class="zoom-btn zoom-in" title="Zooma in" aria-label="Zooma in">+</button>
+                    <button id="zoom-out-btn" class="zoom-btn zoom-out" title="Zooma ut" aria-label="Zooma ut">−</button>
                 </div>
                 
                 <svg id="sweden-map" width="600" height="1200" role="img" aria-label="Karta över Sveriges kommuner">
-                    <!-- Lägg till innehållet från kommunKarta.svg här -->
-                    <image href="kommunKarta.svg" width="600" height="800" alt="SVG karta över Sveriges kommuner" />
+                    <!-- SVG-innehåll laddas dynamiskt via JavaScript -->
                 </svg>
             </div> <!-- Stäng div-taggen för mapContainer -->
             
             <!-- Export button centered below the map -->
             <div class="export-btn-container">
-                <button onclick="exportMap()" class="export-btn">Exportera som SVG</button>
+                <button id="export-btn" class="export-btn">Exportera som SVG</button>
             </div>
         </div>
 
@@ -51,8 +57,8 @@
             
             <!-- Checkbox control buttons centered below the list -->
             <div class="checkbox-controls-container">
-                <button onclick="checkAllCheckboxes()">Markera alla</button>
-                <button onclick="uncheckAllCheckboxes()">Avmarkera alla</button>
+                <button id="check-all-btn">Markera alla</button>
+                <button id="uncheck-all-btn">Avmarkera alla</button>
             </div>
         </div>
     </div> <!-- Stäng div-taggen för container -->
