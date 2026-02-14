@@ -95,9 +95,13 @@ function setButtonLoading(button, isLoading, originalText = null) {
 
 function updateSelectionCounter() {
     const checkboxes = document.querySelectorAll('#checkbox-list input[type="checkbox"]');
-    const checked = document.querySelectorAll('#checkbox-list input[type="checkbox"]:checked');
-    const totalCount = checkboxes.length;
-    const checkedCount = checked.length;
+
+    // Filtrera så vi bara räknar kommuner (4 siffror), inte län (2 siffror)
+    const kommunCheckboxes = Array.from(checkboxes).filter(cb => cb.value.length === 4);
+
+    const totalCount = kommunCheckboxes.length;
+    const checkedCount = kommunCheckboxes.filter(cb => cb.checked).length;
+
     const percentage = totalCount > 0 ? Math.round((checkedCount / totalCount) * 100) : 0;
 
     // Uppdatera statistik-overlay på kartan
@@ -156,7 +160,7 @@ async function initializeMap() {
         }
 
         const data = await kommunResponse.json();
-        const svgData = await svgResponse.text();
+        const svgText = await svgResponse.text();
 
         // Spara data globalt för sökning etc.
         allKommunData = data;
@@ -183,8 +187,30 @@ async function initializeMap() {
         allRegionData = regions;
         globalKommunerMap = kommuner;
 
-        // Lägg till SVG-filen i dokumentet
-        svgMap.innerHTML = svgData;
+        // Parse SVG string to DOM
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgText, "image/svg+xml");
+        const importedSvg = doc.documentElement;
+
+        // Extract attributes from imported SVG
+        const viewBox = importedSvg.getAttribute('viewBox');
+        const width = importedSvg.getAttribute('width');
+        const height = importedSvg.getAttribute('height');
+
+        // Apply attributes to our container SVG if they exist
+        if (viewBox) svgMap.setAttribute('viewBox', viewBox);
+        if (width) svgMap.setAttribute('width', width);
+        if (height) svgMap.setAttribute('height', height);
+
+        // Clear existing content
+        svgMap.innerHTML = '';
+
+        // Move children from imported SVG to our container SVG
+        // Create an array solely to iterate safely while appending
+        const children = Array.from(importedSvg.childNodes);
+        children.forEach(child => {
+            svgMap.appendChild(child);
+        });
 
         // Rensa bort hårdkodade färger från SVG:n så att CSS kan styra
         svgMap.querySelectorAll('path, polygon').forEach(el => {
@@ -215,7 +241,11 @@ async function initializeMap() {
 
         // Initial count update
         updateSelectionCounter();
-        centerMapInContainer();
+
+        // Wait for DOM updates then center
+        requestAnimationFrame(() => {
+            centerMapInContainer();
+        });
 
         // Kolla efter delad länk (URL parametrar)
         parseShareParams();
@@ -1335,21 +1365,20 @@ function centerMapInContainer() {
         const padding = 20; // Padding runt kartan
 
         // Hämta SVG:ns faktiska dimensioner från viewBox eller attribut
-        const svgElement = svgMapElement.querySelector('svg');
         let svgWidth, svgHeight;
 
-        if (svgElement) {
-            const viewBox = svgElement.getAttribute('viewBox');
-            if (viewBox) {
-                const parts = viewBox.split(' ');
-                svgWidth = parseFloat(parts[2]) || 600;
-                svgHeight = parseFloat(parts[3]) || 800;
-            } else {
-                svgWidth = parseFloat(svgElement.getAttribute('width')) || 600;
-                svgHeight = parseFloat(svgElement.getAttribute('height')) || 800;
-            }
+        const viewBox = svgMapElement.getAttribute('viewBox');
+        if (viewBox) {
+            const parts = viewBox.split(' ');
+            svgWidth = parseFloat(parts[2]) || 600;
+            svgHeight = parseFloat(parts[3]) || 800;
         } else {
-            // Fallback - använd getBBox
+            svgWidth = parseFloat(svgMapElement.getAttribute('width')) || 600;
+            svgHeight = parseFloat(svgMapElement.getAttribute('height')) || 800;
+        }
+
+        // Validate dimensions to prevent division by zero
+        if (!svgWidth || !svgHeight) {
             try {
                 const bbox = svgMapElement.getBBox();
                 svgWidth = bbox.width || 600;
