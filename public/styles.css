@@ -365,13 +365,13 @@ h1 {
 }
 
 #sweden-map {
-  width: 100%;
-  height: 100%;
   display: block;
-  margin: auto;
-  object-fit: contain;
-  transform-origin: center center;
-  transition: transform var(--transition-slow);
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+  /* Removed width/height 100% to let JS control size via transform */
 }
 
 #sweden-map path,

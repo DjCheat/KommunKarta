@@ -199,8 +199,14 @@ async function initializeMap() {
 
         // Apply attributes to our container SVG if they exist
         if (viewBox) svgMap.setAttribute('viewBox', viewBox);
-        if (width) svgMap.setAttribute('width', width);
-        if (height) svgMap.setAttribute('height', height);
+
+        // Explicitly set width/height to match viewBox or defaults
+        // This is crucial for the transform logic to have a base size to work with
+        const baseWidth = width || (viewBox ? viewBox.split(' ')[2] : 600);
+        const baseHeight = height || (viewBox ? viewBox.split(' ')[3] : 800);
+
+        svgMap.setAttribute('width', baseWidth);
+        svgMap.setAttribute('height', baseHeight);
 
         // Clear existing content
         svgMap.innerHTML = '';
@@ -1397,7 +1403,7 @@ function centerMapInContainer() {
         const scaleY = availableHeight / svgHeight;
 
         // Använd den mindre skalan för att behålla proportionerna
-        scale = Math.min(scaleX, scaleY, 1); // Max 1 = inte större än originalet
+        scale = Math.min(scaleX, scaleY); // Allow scaling up if container is large
 
         // Beräkna offset för att centrera kartan
         const scaledWidth = svgWidth * scale;
