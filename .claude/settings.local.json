@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npm start)",
       "Bash(npm install:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\frwi01\\\\OneDrive - VertiGIS\\\\Dokument\\\\Antigravity\\\\KommunKarta\" | Where-Object { $_.Name -ne \"node_modules\" } | Select-Object Name, LastWriteTime)"
     ]
   }
 }

@@ -8,6 +8,9 @@
         content="Interaktiv karta över Sveriges kommuner med möjlighet att markera, spara och exportera kommunurval.">
     <title>Sverigekarta - Sveriges kommuner</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -18,7 +21,13 @@
         <h1>Sveriges kommuner</h1>
         <div class="header-actions">
             <div class="color-picker-wrapper">
-                <input type="color" id="map-color-picker" value="#138943" title="Välj färg för markerade kommuner">
+                <span class="color-swatch active-swatch" data-color="#138943" style="background:#138943" title="Grön"></span>
+                <span class="color-swatch" data-color="#1a5fa8" style="background:#1a5fa8" title="Blå"></span>
+                <span class="color-swatch" data-color="#b83232" style="background:#b83232" title="Röd"></span>
+                <span class="color-swatch" data-color="#c07a1a" style="background:#c07a1a" title="Orange"></span>
+                <span class="color-swatch" data-color="#5b4a8a" style="background:#5b4a8a" title="Lila"></span>
+                <span class="swatch-divider"></span>
+                <input type="color" id="map-color-picker" value="#138943" title="Välj anpassad färg">
                 <button id="reset-color-btn" class="reset-mini-btn" title="Återställ färg">↺</button>
             </div>
             <button id="theme-toggle-btn" class="theme-btn" title="Växla tema" aria-label="Växla mörkt/ljust läge">
@@ -84,39 +93,50 @@
                     </div>
                     <div class="modal-body">
                         <ul class="help-list">
-                            <li><strong>Panorering:</strong> Klicka och dra på kartan för att flytta runt vyn.</li>
-                            <li><strong>Zoom:</strong> Använd knapparna (+/-) eller rulla med musen över kartan för att
-                                zooma.</li>
-                            <li><strong>Sökning:</strong> Skriv i sökfältet till höger för att snabbt hitta en kommun
-                                eller se alla i ett län.</li>
-                            <li><strong>Dela:</strong> Skapa en länk för att visa precis samma urval och färg för någon
-                                annan.</li>
+                            <li><strong>Panorering:</strong> Klicka och dra på kartan. På mobil: svep med ett finger.</li>
+                            <li><strong>Zoom:</strong> Rulla med musen, använd +/- knapparna, eller nyp på mobil.</li>
+                            <li><strong>Sökning:</strong> Skriv i sökfältet till höger för att hitta en kommun eller ett län.</li>
+                            <li><strong>Dela:</strong> Skapa en länk för att visa precis samma urval och färg.</li>
                         </ul>
+                        <div class="help-shortcuts">
+                            <h4>Tangentbordsgenvägar</h4>
+                            <ul class="shortcut-list">
+                                <li><kbd>Piltangenter</kbd> Panorera kartan</li>
+                                <li><kbd>+</kbd> / <kbd>-</kbd> Zooma in/ut</li>
+                                <li><kbd>0</kbd> eller <kbd>Esc</kbd> Återställ vy</li>
+                                <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> Ångra senaste markering</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Toolbar below the map -->
+            <!-- Save image — full-width button directly below map -->
+            <div class="save-image-dropdown save-image-full">
+                <button id="save-image-btn" class="save-image-full-btn" title="Exportera karta som bild">
+                    ↓ Spara bild
+                </button>
+                <ul class="save-image-menu" id="save-image-menu">
+                    <li id="export-png-btn">PNG</li>
+                    <li id="export-btn">SVG</li>
+                </ul>
+            </div>
+
+            <!-- Toolbar below save button -->
             <div class="map-toolbar">
                 <div class="toolbar-group">
-                    <button id="import-json-btn" class="toolbar-btn" title="Öppna en sparad kartfil">📂 Öppna
-                        fil</button>
-                    <button id="export-json-btn" class="toolbar-btn" title="Spara din karta som en fil">💾 Spara
-                        fil</button>
+                    <button id="import-json-btn" class="toolbar-btn" title="Öppna en sparad kartfil">↑<span class="btn-label"> Öppna fil</span></button>
+                    <button id="export-json-btn" class="toolbar-btn" title="Spara din karta som en fil">↓<span class="btn-label"> Spara fil</span></button>
                     <input type="file" id="import-file-input" accept=".json" style="display: none;">
                 </div>
 
                 <div class="toolbar-divider"></div>
 
                 <div class="toolbar-group">
-                    <button id="share-link-btn" class="toolbar-btn" title="Skapa en delningslänk">🔗 Dela länk</button>
-                    <button id="copy-list-btn" class="toolbar-btn" title="Kopiera namnen på alla markerade kommuner">📋
-                        Kopiera lista</button>
+                    <button id="share-link-btn" class="toolbar-btn" title="Skapa en delningslänk">⊹<span class="btn-label"> Dela länk</span></button>
+                    <button id="copy-list-btn" class="toolbar-btn" title="Kopiera namnen på alla markerade kommuner">≡<span class="btn-label"> Kopiera lista</span></button>
+                    <button id="export-csv-btn" class="toolbar-btn" title="Exportera markerade kommuner som CSV">↓<span class="btn-label"> Exportera CSV</span></button>
                 </div>
-
-                <div class="toolbar-spacer"></div>
-
-                <button id="export-btn" class="action-btn primary-btn">📸 Spara som bild</button>
             </div>
         </div>
 
