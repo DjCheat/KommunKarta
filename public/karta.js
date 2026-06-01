@@ -1949,62 +1949,92 @@ function exportMap(button = null) {
 // PNG-export via canvas
 function exportMapAsPNG(button = null) {
     initializeCache();
-    const innerSvg = svgMap;
-    if (!innerSvg) { showToast('Ingen karta att exportera', 'error'); return; }
+    if (!svgMap) { showToast('Ingen karta att exportera', 'error'); return; }
     if (button) setButtonLoading(button, true);
 
-    const svgCopy = innerSvg.cloneNode(true);
-    // Inline computed fill so canvas sees real colors
-    const origPaths = innerSvg.querySelectorAll('path, polygon');
-    const copyPaths = svgCopy.querySelectorAll('path, polygon');
-    origPaths.forEach((orig, i) => {
-        const cs = window.getComputedStyle(orig);
-        copyPaths[i].style.fill = cs.fill;
-        copyPaths[i].style.stroke = cs.stroke;
-        copyPaths[i].style.strokeWidth = cs.strokeWidth;
-    });
+    // Save and reset view so getBBox returns SVG-space coordinates, not screen-space
+    const currentScale = scale;
+    const currentOffsetX = offsetX;
+    const currentOffsetY = offsetY;
+    resetView();
 
-    // Compute actual content bounds so the export crops tightly
-    let bbox = null;
-    try { bbox = innerSvg.getBBox(); } catch (e) { /* not in DOM */ }
-    const pad = 4;
-    const vbX = bbox ? bbox.x - pad : 0;
-    const vbY = bbox ? bbox.y - pad : 0;
-    const vbW = bbox ? bbox.width + pad * 2 : (parseFloat(innerSvg.getAttribute('width')) || 600);
-    const vbH = bbox ? bbox.height + pad * 2 : (parseFloat(innerSvg.getAttribute('height')) || 1200);
-    svgCopy.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
-    svgCopy.setAttribute('width', vbW);
-    svgCopy.setAttribute('height', vbH);
+    requestAnimationFrame(() => {
+        try {
+            const innerSvg = svgMap;
 
-    const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim() || '#f5f2ec';
-    const svgData = new XMLSerializer().serializeToString(svgCopy);
-    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    const svgUrl = URL.createObjectURL(svgBlob);
+            const svgCopy = innerSvg.cloneNode(true);
+            svgCopy.style.transform = 'none';
 
-    const img = new Image();
-    img.onload = () => {
-        const px = 2; // 2x for retina quality
-        const canvas = document.createElement('canvas');
-        canvas.width = vbW * px;
-        canvas.height = vbH * px;
-        const ctx = canvas.getContext('2d');
-        ctx.scale(px, px);
-        ctx.fillStyle = bgColor;
-        ctx.fillRect(0, 0, vbW, vbH);
-        ctx.drawImage(img, 0, 0, vbW, vbH);
-        canvas.toBlob(blob => {
-            downloadBlob(blob, `sverigekarta-${new Date().toISOString().slice(0, 10)}.png`);
-            URL.revokeObjectURL(svgUrl);
-            showToast('Kartan exporterad som PNG!', 'success');
+            // Inline computed fill so canvas sees real colors
+            const origPaths = innerSvg.querySelectorAll('path, polygon');
+            const copyPaths = svgCopy.querySelectorAll('path, polygon');
+            origPaths.forEach((orig, i) => {
+                const cs = window.getComputedStyle(orig);
+                copyPaths[i].style.fill = cs.fill;
+                copyPaths[i].style.stroke = cs.stroke;
+                copyPaths[i].style.strokeWidth = cs.strokeWidth;
+            });
+
+            // Compute actual content bounds with getBBox (view is reset, so coords are stable)
+            let viewBox = innerSvg.getAttribute('viewBox');
+            if (!viewBox) {
+                try {
+                    const bb = innerSvg.getBBox();
+                    const pad = 4;
+                    viewBox = `${bb.x - pad} ${bb.y - pad} ${bb.width + pad * 2} ${bb.height + pad * 2}`;
+                } catch (e) {
+                    const w = parseFloat(innerSvg.getAttribute('width')) || 600;
+                    const h = parseFloat(innerSvg.getAttribute('height')) || 1200;
+                    viewBox = `0 0 ${w} ${h}`;
+                }
+            }
+            const parts = viewBox.split(' ');
+            const vbW = parseFloat(parts[2]);
+            const vbH = parseFloat(parts[3]);
+            svgCopy.setAttribute('viewBox', viewBox);
+            svgCopy.setAttribute('width', vbW);
+            svgCopy.setAttribute('height', vbH);
+
+            const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim() || '#f5f2ec';
+            const svgData = new XMLSerializer().serializeToString(svgCopy);
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            const svgUrl = URL.createObjectURL(svgBlob);
+
+            const img = new Image();
+            img.onload = () => {
+                const px = 2;
+                const canvas = document.createElement('canvas');
+                canvas.width = vbW * px;
+                canvas.height = vbH * px;
+                const ctx = canvas.getContext('2d');
+                ctx.scale(px, px);
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(0, 0, vbW, vbH);
+                ctx.drawImage(img, 0, 0, vbW, vbH);
+                canvas.toBlob(blob => {
+                    downloadBlob(blob, `sverigekarta-${new Date().toISOString().slice(0, 10)}.png`);
+                    URL.revokeObjectURL(svgUrl);
+                    showToast('Kartan exporterad som PNG!', 'success');
+                    if (button) setButtonLoading(button, false);
+                }, 'image/png');
+            };
+            img.onerror = () => {
+                showToast('Kunde inte exportera som PNG', 'error');
+                URL.revokeObjectURL(svgUrl);
+                if (button) setButtonLoading(button, false);
+            };
+            img.src = svgUrl;
+        } catch (err) {
+            showToast('Kunde inte exportera som PNG', 'error');
             if (button) setButtonLoading(button, false);
-        }, 'image/png');
-    };
-    img.onerror = () => {
-        showToast('Kunde inte exportera som PNG', 'error');
-        URL.revokeObjectURL(svgUrl);
-        if (button) setButtonLoading(button, false);
-    };
-    img.src = svgUrl;
+        } finally {
+            // Restore pan/zoom
+            scale = currentScale;
+            offsetX = currentOffsetX;
+            offsetY = currentOffsetY;
+            updateTransform();
+        }
+    });
 }
 
 // CSV-export av markerade kommuner
