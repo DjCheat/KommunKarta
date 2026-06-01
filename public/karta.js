@@ -1879,6 +1879,16 @@ function exportMap(button = null) {
                 // Klona svgMap direkt (det ÄR SVG-elementet)
                 const svgCopy = svgMap.cloneNode(true);
 
+                // Inline computed fill/stroke so the SVG is self-contained without page CSS
+                const origPaths = svgMap.querySelectorAll('path, polygon');
+                const copyPaths = svgCopy.querySelectorAll('path, polygon');
+                origPaths.forEach((orig, i) => {
+                    const cs = window.getComputedStyle(orig);
+                    copyPaths[i].style.fill = cs.fill;
+                    copyPaths[i].style.stroke = cs.stroke;
+                    copyPaths[i].style.strokeWidth = cs.strokeWidth;
+                });
+
                 // Ta bort eventuell transform
                 svgCopy.style.transform = 'none';
 
@@ -1954,11 +1964,15 @@ function exportMapAsPNG(button = null) {
         copyPaths[i].style.strokeWidth = cs.strokeWidth;
     });
 
-    const viewBox = innerSvg.getAttribute('viewBox');
-    const parts = viewBox?.split(' ');
-    const vbW = (parts ? parseFloat(parts[2]) : parseFloat(innerSvg.getAttribute('width'))) || 600;
-    const vbH = (parts ? parseFloat(parts[3]) : parseFloat(innerSvg.getAttribute('height'))) || 1200;
-    svgCopy.setAttribute('viewBox', `0 0 ${vbW} ${vbH}`);
+    // Compute actual content bounds so the export crops tightly
+    let bbox = null;
+    try { bbox = innerSvg.getBBox(); } catch (e) { /* not in DOM */ }
+    const pad = 4;
+    const vbX = bbox ? bbox.x - pad : 0;
+    const vbY = bbox ? bbox.y - pad : 0;
+    const vbW = bbox ? bbox.width + pad * 2 : (parseFloat(innerSvg.getAttribute('width')) || 600);
+    const vbH = bbox ? bbox.height + pad * 2 : (parseFloat(innerSvg.getAttribute('height')) || 1200);
+    svgCopy.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
     svgCopy.setAttribute('width', vbW);
     svgCopy.setAttribute('height', vbH);
 
