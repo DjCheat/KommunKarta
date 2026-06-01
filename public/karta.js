@@ -120,6 +120,17 @@ function updateSelectionCounter() {
     });
 }
 
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
 // Apply color directly to SVG elements for a commune (no side-effects)
 function applyKommunColor(kommunKod, color) {
     const elements = svgElementCache[kommunKod] || document.querySelectorAll(`[id="${kommunKod}"]`);
@@ -148,17 +159,7 @@ function undo() {
     }
     const prev = undoStack.pop();
     kommunColors = prev.colors;
-    const checkboxes = document.querySelectorAll('#checkbox-list input[type="checkbox"]');
-    checkboxes.forEach(cb => {
-        const checked = prev.checkboxState[cb.value] || false;
-        cb.checked = checked;
-        const color = checked ? (kommunColors[cb.value] || KOMMUN_COLOR_SELECTED) : '';
-        applyKommunColor(cb.value, color);
-        const label = cb.parentElement;
-        if (label) label.classList.toggle('checked', checked);
-    });
-    localStorage.setItem('checkboxState', JSON.stringify(prev.checkboxState));
-    localStorage.setItem('kommunColors', JSON.stringify(kommunColors));
+    applyCheckboxStateMap(prev.checkboxState);
     updateSelectionCounter();
     showToast('Ångrat', 'info', 1500);
 }
@@ -169,6 +170,7 @@ function undo() {
 
 // Hämta element
 const svgMap = document.getElementById('sweden-map');
+const mapContainer = document.getElementById('mapContainer');
 const checkboxList = document.getElementById('checkbox-list');
 const tooltip = document.getElementById('map-tooltip');
 const kommunSearchInput = document.getElementById('kommun-search');
@@ -447,13 +449,17 @@ function createCheckboxItem(code, name) {
     checkbox.addEventListener('change', toggleKommunColor);
 
     label.addEventListener('mouseenter', () => {
-        const paths = document.querySelectorAll(`[id="${code}"] polygon, [id="${code}"] path, path[id="${code}"], polygon[id="${code}"]`);
-        paths.forEach(p => p.style.opacity = '0.5');
+        (svgElementCache[code] || []).forEach(el => {
+            (el.tagName.toLowerCase() === 'g' ? el.querySelectorAll('polygon, path') : [el])
+                .forEach(p => { p.style.opacity = '0.5'; });
+        });
     });
 
     label.addEventListener('mouseleave', () => {
-        const paths = document.querySelectorAll(`[id="${code}"] polygon, [id="${code}"] path, path[id="${code}"], polygon[id="${code}"]`);
-        paths.forEach(p => p.style.opacity = '1');
+        (svgElementCache[code] || []).forEach(el => {
+            (el.tagName.toLowerCase() === 'g' ? el.querySelectorAll('polygon, path') : [el])
+                .forEach(p => { p.style.opacity = '1'; });
+        });
     });
 
     label.appendChild(checkbox);
@@ -663,6 +669,30 @@ function saveState(stateName, button = null) {
     }
 }
 
+function loadRawState(stateName) {
+    let data = localStorage.getItem(`kommunkarta_${stateName}`);
+    if (data) return { data, isNewFormat: true };
+    data = localStorage.getItem(stateName);
+    if (data) return { data, isNewFormat: false };
+    return null;
+}
+
+function applyCheckboxStateMap(stateMap) {
+    const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
+    const newState = {};
+    checkboxes.forEach(cb => {
+        const checked = stateMap[cb.value] || false;
+        cb.checked = checked;
+        const color = checked ? (kommunColors[cb.value] || KOMMUN_COLOR_SELECTED) : '';
+        applyKommunColor(cb.value, color);
+        const label = cb.parentElement;
+        if (label) label.classList.toggle('checked', checked);
+        newState[cb.value] = checked;
+    });
+    localStorage.setItem('checkboxState', JSON.stringify(newState));
+    localStorage.setItem('kommunColors', JSON.stringify(kommunColors));
+}
+
 // Funktion för att ladda en uppsättning checkbox-tillstånd med ett visst namn
 function loadState(stateName, button = null) {
     if (!stateName || typeof stateName !== 'string' || stateName.trim().length === 0) {
@@ -673,43 +703,21 @@ function loadState(stateName, button = null) {
     if (button) setButtonLoading(button, true);
 
     try {
-        // Försök hitta med nytt prefix först, sedan utan
-        let savedData = localStorage.getItem(`kommunkarta_${stateName}`);
-        let isNewFormat = true;
-
-        if (!savedData) {
-            savedData = localStorage.getItem(stateName);
-            isNewFormat = false;
-        }
-
-        if (!savedData) {
+        const raw = loadRawState(stateName);
+        if (!raw) {
             showToast(`"${stateName}" hittades inte.`, 'warning');
             if (button) setButtonLoading(button, false);
             return;
         }
 
         pushUndoState();
-        const parsed = JSON.parse(savedData);
-        const savedCheckboxState = isNewFormat ? parsed.state : parsed;
+        const parsed = JSON.parse(raw.data);
+        const savedCheckboxState = raw.isNewFormat ? parsed.state : parsed;
 
-        // Återställ per-kommunfärger och vald färg
-        kommunColors = (isNewFormat && parsed.colors) ? parsed.colors : {};
-        if (isNewFormat && parsed.selectedColor) updateSelectedColor(parsed.selectedColor, true);
+        kommunColors = (raw.isNewFormat && parsed.colors) ? parsed.colors : {};
+        if (raw.isNewFormat && parsed.selectedColor) updateSelectedColor(parsed.selectedColor, true);
 
-        const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
-        const newCheckboxState = {};
-        checkboxes.forEach(checkbox => {
-            const checked = savedCheckboxState[checkbox.value] || false;
-            checkbox.checked = checked;
-            const color = checked ? (kommunColors[checkbox.value] || KOMMUN_COLOR_SELECTED) : '';
-            applyKommunColor(checkbox.value, color);
-            const label = checkbox.parentElement;
-            if (label) label.classList.toggle('checked', checked);
-            newCheckboxState[checkbox.value] = checked;
-        });
-        localStorage.setItem('checkboxState', JSON.stringify(newCheckboxState));
-        localStorage.setItem('kommunColors', JSON.stringify(kommunColors));
-
+        applyCheckboxStateMap(savedCheckboxState);
         showToast(`Kartvyn "${stateName}" visas nu`, 'success');
         updateSelectionCounter();
     } catch (error) {
@@ -735,23 +743,12 @@ function loadMultipleStates(stateNames, button = null) {
 
     try {
         stateNames.forEach(stateName => {
-            if (typeof stateName !== 'string' || stateName.trim().length === 0) {
-                return;
-            }
-
-            // Försök hitta med nytt prefix först, sedan utan
-            let savedData = localStorage.getItem(`kommunkarta_${stateName}`);
-            let isNewFormat = true;
-
-            if (!savedData) {
-                savedData = localStorage.getItem(stateName);
-                isNewFormat = false;
-            }
-
-            if (savedData) {
+            if (typeof stateName !== 'string' || stateName.trim().length === 0) return;
+            const raw = loadRawState(stateName);
+            if (raw) {
                 try {
-                    const parsed = JSON.parse(savedData);
-                    const savedCheckboxState = isNewFormat ? parsed.state : parsed;
+                    const parsed = JSON.parse(raw.data);
+                    const savedCheckboxState = raw.isNewFormat ? parsed.state : parsed;
                     loadedStates++;
                     Object.keys(savedCheckboxState).forEach(kommunKod => {
                         combinedCheckboxState[kommunKod] = combinedCheckboxState[kommunKod] || savedCheckboxState[kommunKod];
@@ -770,7 +767,6 @@ function loadMultipleStates(stateNames, button = null) {
         });
 
         if (loadedStates > 0) {
-            const checkedCount = document.querySelectorAll('#checkbox-list input[type="checkbox"]:checked').length;
             showToast(`${loadedStates} sparade kartor öppnades`, 'success');
         } else {
             showToast('Inga sparade kartor hittades.', 'warning');
@@ -1255,24 +1251,13 @@ let scale = 1;
 let offsetX = 0;
 let offsetY = 0;
 
-// Performance optimization: Cache DOM elements and rAF id
-let svgMapElement = null;
-let mapContainerElement = null;
 let rafId = null;
 
 function clamp(v, min, max) {
     return Math.max(min, Math.min(max, v));
 }
 
-// Initialize cached DOM elements
-function initializeCache() {
-    if (!svgMapElement) {
-        svgMapElement = document.getElementById("sweden-map");
-    }
-    if (!mapContainerElement) {
-        mapContainerElement = document.getElementById("mapContainer");
-    }
-}
+function initializeCache() {} // kept for call-site compatibility; DOM refs now top-level
 
 
 // Setup Map Hover interactions
@@ -1363,15 +1348,7 @@ function setupJsonExportImport() {
 
             const dataStr = JSON.stringify(selection, null, 2);
             const blob = new Blob([dataStr], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `min-karta-${new Date().toISOString().slice(0, 10)}.json`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+            downloadBlob(blob, `min-karta-${new Date().toISOString().slice(0, 10)}.json`);
             showToast('Kartan sparad som fil', 'success');
         });
     }
@@ -1525,43 +1502,43 @@ function setupSearch(kommuner, regions) {
 // NOTE: translate THEN scale ordering keeps pan offsets in unscaled pixels, making math simpler.
 function updateTransform() {
     initializeCache();
-    if (svgMapElement) {
-        svgMapElement.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
-        svgMapElement.style.transformOrigin = '0 0'; // ensure consistent origin
+    if (svgMap) {
+        svgMap.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+        svgMap.style.transformOrigin = '0 0'; // ensure consistent origin
     }
 }
 
 // Function to center and fit the map in the container
 function centerMapInContainer() {
     initializeCache();
-    if (svgMapElement && mapContainerElement) {
+    if (svgMap && mapContainer) {
         // Reset transformations first
         scale = 1;
         offsetX = 0;
         offsetY = 0;
-        svgMapElement.style.transform = 'none';
+        svgMap.style.transform = 'none';
 
         // Get container dimensions
-        const containerRect = mapContainerElement.getBoundingClientRect();
+        const containerRect = mapContainer.getBoundingClientRect();
         const padding = 20; // Padding runt kartan
 
         // Hämta SVG:ns faktiska dimensioner från viewBox eller attribut
         let svgWidth, svgHeight;
 
-        const viewBox = svgMapElement.getAttribute('viewBox');
+        const viewBox = svgMap.getAttribute('viewBox');
         if (viewBox) {
             const parts = viewBox.split(' ');
             svgWidth = parseFloat(parts[2]) || 600;
             svgHeight = parseFloat(parts[3]) || 800;
         } else {
-            svgWidth = parseFloat(svgMapElement.getAttribute('width')) || 600;
-            svgHeight = parseFloat(svgMapElement.getAttribute('height')) || 800;
+            svgWidth = parseFloat(svgMap.getAttribute('width')) || 600;
+            svgHeight = parseFloat(svgMap.getAttribute('height')) || 800;
         }
 
         // Validate dimensions to prevent division by zero
         if (!svgWidth || !svgHeight) {
             try {
-                const bbox = svgMapElement.getBBox();
+                const bbox = svgMap.getBBox();
                 svgWidth = bbox.width || 600;
                 svgHeight = bbox.height || 800;
             } catch (e) {
@@ -1599,14 +1576,12 @@ function debouncedZoom(callback) {
     rafId = requestAnimationFrame(callback);
 }
 
-// Funktion för att zooma in
-function zoomIn() {
+function zoomByStep(delta) {
     debouncedZoom(() => {
-        const newScale = Math.min(scale + 0.5, 5);
-        // zoom centered on container center
+        const newScale = Math.min(Math.max(scale + delta, 0.5), 5);
         initializeCache();
-        if (mapContainerElement) {
-            const rect = mapContainerElement.getBoundingClientRect();
+        if (mapContainer) {
+            const rect = mapContainer.getBoundingClientRect();
             const cx = rect.width / 2;
             const cy = rect.height / 2;
             offsetX += cx * (1 / newScale - 1 / scale);
@@ -1617,31 +1592,16 @@ function zoomIn() {
     });
 }
 
-// Funktion för att zooma ut
-function zoomOut() {
-    debouncedZoom(() => {
-        const newScale = Math.max(scale - 0.5, 0.5);
-        initializeCache();
-        if (mapContainerElement) {
-            const rect = mapContainerElement.getBoundingClientRect();
-            const cx = rect.width / 2;
-            const cy = rect.height / 2;
-            offsetX += cx * (1 / newScale - 1 / scale);
-            offsetY += cy * (1 / newScale - 1 / scale);
-        }
-        scale = newScale;
-        updateTransform();
-    });
-}
+function zoomIn() { zoomByStep(0.5); }
+function zoomOut() { zoomByStep(-0.5); }
 
-// Funktion för att zooma in genom dubbelklick (toward cursor)
-function zoomInOnDoubleClick(event) {
+function zoomOnDoubleClick(event, factor) {
     debouncedZoom(() => {
         initializeCache();
-        const rect = mapContainerElement.getBoundingClientRect();
+        const rect = mapContainer.getBoundingClientRect();
         const mouseX = event.clientX - rect.left;
         const mouseY = event.clientY - rect.top;
-        const newScale = Math.min(scale * 1.5, 5);
+        const newScale = Math.min(Math.max(scale * factor, 0.5), 5);
         offsetX += mouseX * (1 / newScale - 1 / scale);
         offsetY += mouseY * (1 / newScale - 1 / scale);
         scale = newScale;
@@ -1649,20 +1609,8 @@ function zoomInOnDoubleClick(event) {
     });
 }
 
-// Funktion för att zooma ut genom dubbelklick (toward cursor)
-function zoomOutOnDoubleClick(event) {
-    debouncedZoom(() => {
-        initializeCache();
-        const rect = mapContainerElement.getBoundingClientRect();
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
-        const newScale = Math.max(scale * 0.5, 0.5);
-        offsetX += mouseX * (1 / newScale - 1 / scale);
-        offsetY += mouseY * (1 / newScale - 1 / scale);
-        scale = newScale;
-        updateTransform();
-    });
-}
+function zoomInOnDoubleClick(event) { zoomOnDoubleClick(event, 1.5); }
+function zoomOutOnDoubleClick(event) { zoomOnDoubleClick(event, 0.5); }
 
 // Panning variables
 let isDragging = false;
@@ -1707,7 +1655,7 @@ function handleWheelZoom(event) {
     event.preventDefault();
 
     initializeCache();
-    if (!mapContainerElement || !svgMapElement) return;
+    if (!mapContainer || !svgMap) return;
 
     // Wheel delta: negative = wheel up (zoom in), positive = wheel down (zoom out)
     const delta = -event.deltaY;
@@ -1717,7 +1665,7 @@ function handleWheelZoom(event) {
     const newScale = clamp(scale * Math.exp(delta * zoomIntensity), 0.5, 5);
 
     // Compute mouse position relative to container (unscaled coordinates)
-    const rect = mapContainerElement.getBoundingClientRect();
+    const rect = mapContainer.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
 
@@ -1803,8 +1751,8 @@ document.addEventListener("DOMContentLoaded", function () {
     initializeCache();
 
     // double click zoom on the SVG map
-    if (svgMapElement) {
-        svgMapElement.addEventListener("dblclick", function (event) {
+    if (svgMap) {
+        svgMap.addEventListener("dblclick", function (event) {
             if (event.ctrlKey) {
                 zoomOutOnDoubleClick(event);
             } else {
@@ -1814,9 +1762,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // wheel zoom on container (single handler) — ensure passive: false so preventDefault works
-    if (mapContainerElement) {
-        mapContainerElement.addEventListener('wheel', handleWheelZoom, { passive: false });
-        mapContainerElement.addEventListener('mousedown', startPan);
+    if (mapContainer) {
+        mapContainer.addEventListener('wheel', handleWheelZoom, { passive: false });
+        mapContainer.addEventListener('mousedown', startPan);
     }
 
     // mouse move/up for panning
@@ -1841,8 +1789,8 @@ document.addEventListener("DOMContentLoaded", function () {
     let lastTouchDist = null;
     let touchStartX = 0, touchStartY = 0, touchStartOffsetX = 0, touchStartOffsetY = 0;
 
-    if (mapContainerElement) {
-        mapContainerElement.addEventListener('touchstart', (e) => {
+    if (mapContainer) {
+        mapContainer.addEventListener('touchstart', (e) => {
             if (e.touches.length === 1) {
                 touchStartX = e.touches[0].clientX;
                 touchStartY = e.touches[0].clientY;
@@ -1859,7 +1807,7 @@ document.addEventListener("DOMContentLoaded", function () {
             e.preventDefault();
         }, { passive: false });
 
-        mapContainerElement.addEventListener('touchmove', (e) => {
+        mapContainer.addEventListener('touchmove', (e) => {
             if (e.touches.length === 1 && isDragging) {
                 offsetX = touchStartOffsetX + e.touches[0].clientX - touchStartX;
                 offsetY = touchStartOffsetY + e.touches[0].clientY - touchStartY;
@@ -1870,7 +1818,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-                const rect = mapContainerElement.getBoundingClientRect();
+                const rect = mapContainer.getBoundingClientRect();
                 const mx = midX - rect.left;
                 const my = midY - rect.top;
                 const newScale = clamp(scale * (dist / lastTouchDist), 0.5, 5);
@@ -1883,7 +1831,7 @@ document.addEventListener("DOMContentLoaded", function () {
             e.preventDefault();
         }, { passive: false });
 
-        mapContainerElement.addEventListener('touchend', () => {
+        mapContainer.addEventListener('touchend', () => {
             isDragging = false;
             lastTouchDist = null;
         }, { passive: false });
@@ -1905,7 +1853,7 @@ function resetView() {
 function exportMap(button = null) {
     initializeCache();
 
-    if (!svgMapElement) {
+    if (!svgMap) {
         showToast('Kartan kunde inte hittas.', 'error');
         return;
     }
@@ -1924,23 +1872,23 @@ function exportMap(button = null) {
         // Vänta på att återställningen ska slå igenom
         requestAnimationFrame(() => {
             try {
-                if (!svgMapElement) {
+                if (!svgMap) {
                     throw new Error('Ingen SVG-karta hittades');
                 }
 
-                // Klona svgMapElement direkt (det ÄR SVG-elementet)
-                const svgCopy = svgMapElement.cloneNode(true);
+                // Klona svgMap direkt (det ÄR SVG-elementet)
+                const svgCopy = svgMap.cloneNode(true);
 
                 // Ta bort eventuell transform
                 svgCopy.style.transform = 'none';
 
                 // Försök hämta viewBox från originalet, eller beräkna från innehållet
-                let viewBox = svgMapElement.getAttribute('viewBox');
+                let viewBox = svgMap.getAttribute('viewBox');
 
                 if (!viewBox) {
                     // Försök beräkna från getBBox
                     try {
-                        const bbox = svgMapElement.getBBox();
+                        const bbox = svgMap.getBBox();
                         const padding = 20;
                         viewBox = `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + 2 * padding} ${bbox.height + 2 * padding}`;
                     } catch (e) {
@@ -1958,22 +1906,8 @@ function exportMap(button = null) {
                 // Skapa en SVG-sträng från kopian av SVG-elementet
                 const svgString = new XMLSerializer().serializeToString(svgCopy);
 
-                // Skapa en Blob med den nya SVG-strängen
                 const blob = new Blob([svgString], { type: "image/svg+xml" });
-
-                // Skapa en URL från Blob
-                const url = URL.createObjectURL(blob);
-
-                // Skapa en länk för att ladda ner SVG-filen
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = "sweden-map.svg";
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-                // Återkalla URL:en
-                URL.revokeObjectURL(url);
+                downloadBlob(blob, "sweden-map.svg");
 
                 // Återställ tidigare transformation
                 scale = currentScale;
@@ -2005,7 +1939,7 @@ function exportMap(button = null) {
 // PNG-export via canvas
 function exportMapAsPNG(button = null) {
     initializeCache();
-    const innerSvg = svgMapElement || null;
+    const innerSvg = svgMap;
     if (!innerSvg) { showToast('Ingen karta att exportera', 'error'); return; }
     if (button) setButtonLoading(button, true);
 
@@ -2020,11 +1954,11 @@ function exportMapAsPNG(button = null) {
         copyPaths[i].style.strokeWidth = cs.strokeWidth;
     });
 
-    const viewBox = innerSvg.getAttribute('viewBox') || '0 0 600 1200';
-    const parts = viewBox.split(' ');
-    const vbW = parseFloat(parts[2]) || 600;
-    const vbH = parseFloat(parts[3]) || 1200;
-    svgCopy.setAttribute('viewBox', viewBox);
+    const viewBox = innerSvg.getAttribute('viewBox');
+    const parts = viewBox?.split(' ');
+    const vbW = (parts ? parseFloat(parts[2]) : parseFloat(innerSvg.getAttribute('width'))) || 600;
+    const vbH = (parts ? parseFloat(parts[3]) : parseFloat(innerSvg.getAttribute('height'))) || 1200;
+    svgCopy.setAttribute('viewBox', `0 0 ${vbW} ${vbH}`);
     svgCopy.setAttribute('width', vbW);
     svgCopy.setAttribute('height', vbH);
 
@@ -2045,14 +1979,7 @@ function exportMapAsPNG(button = null) {
         ctx.fillRect(0, 0, vbW, vbH);
         ctx.drawImage(img, 0, 0, vbW, vbH);
         canvas.toBlob(blob => {
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `sverigekarta-${new Date().toISOString().slice(0, 10)}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+            downloadBlob(blob, `sverigekarta-${new Date().toISOString().slice(0, 10)}.png`);
             URL.revokeObjectURL(svgUrl);
             showToast('Kartan exporterad som PNG!', 'success');
             if (button) setButtonLoading(button, false);
@@ -2084,13 +2011,6 @@ function exportSelectedAsCSV() {
     });
     const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `kommuner-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `kommuner-${new Date().toISOString().slice(0, 10)}.csv`);
     showToast(`Exporterade ${rows.length - 1} kommuner som CSV`, 'success');
 }

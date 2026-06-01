@@ -13,8 +13,6 @@
   --color-unselected: #d8d4cc;
 
   /* Semantic colors */
-  --color-save-btn: #2a6049;
-  --color-save-btn-hover: #1e4636;
   --color-export-btn: #5b4a8a;
   --color-export-btn-hover: #44366b;
   --color-danger: #b83232;
@@ -45,6 +43,15 @@
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-full: 9999px;
+
+  /* Focus ring */
+  --focus-ring: 0 0 0 3px rgba(26, 58, 92, 0.1);
+
+  /* Semantic alpha tints (10 %) — used for icon bg, hover tints */
+  --color-selected-tint: rgba(42, 96, 73, 0.1);
+  --color-danger-tint: rgba(184, 50, 50, 0.1);
+  --color-warning-tint: rgba(192, 122, 26, 0.1);
+  --color-primary-tint: rgba(26, 58, 92, 0.1);
 
   /* Transitions */
   --transition-fast: 120ms ease;
@@ -88,6 +95,8 @@
 *::after {
   box-sizing: border-box;
 }
+
+.hidden { display: none !important; }
 
 html,
 body {
@@ -188,12 +197,10 @@ h1 {
   display: none;
 }
 
-[data-theme="light"] .theme-icon-sun,
 :root:not([data-theme="dark"]) .theme-icon-sun {
   display: none;
 }
 
-[data-theme="light"] .theme-icon-moon,
 :root:not([data-theme="dark"]) .theme-icon-moon {
   display: inline;
 }
@@ -235,7 +242,7 @@ h1 {
 #kommun-search:focus {
   outline: none;
   border-color: var(--color-primary-light);
-  box-shadow: 0 0 0 3px rgba(26, 58, 92, 0.1);
+  box-shadow: var(--focus-ring);
 }
 
 [data-theme="dark"] #kommun-search:focus {
@@ -300,7 +307,7 @@ h1 {
   box-shadow: none !important;
   border-radius: var(--radius-md);
   white-space: nowrap;
-  gap: 5px !important;
+  gap: 5px;
   transition: all var(--transition-fast);
 }
 
@@ -408,7 +415,6 @@ h1 {
   fill: var(--color-unselected);
   stroke: var(--bg-card);
   stroke-width: 0.4px;
-  transition: fill var(--transition-normal), opacity var(--transition-fast);
 }
 
 /* ============================================
@@ -875,12 +881,12 @@ button:focus {
 }
 
 .save-btn {
-  background: var(--color-save-btn);
+  background: var(--color-selected);
   color: white;
 }
 
 .save-btn:hover {
-  background: var(--color-save-btn-hover);
+  background: var(--color-selected-dark);
 }
 
 .export-btn {
@@ -1076,7 +1082,7 @@ button:focus {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  box-shadow: var(--shadow-md);
   list-style: none;
   margin: 0;
   padding: 4px 0;
@@ -1158,7 +1164,7 @@ button:focus {
 .state-save-form input:focus {
   outline: none;
   border-color: var(--color-primary-light);
-  box-shadow: 0 0 0 3px rgba(26, 58, 92, 0.1);
+  box-shadow: var(--focus-ring);
   background: var(--bg-card);
 }
 
@@ -1559,10 +1565,10 @@ kbd {
   border-radius: 50%;
 }
 
-.toast-success .toast-icon { color: var(--color-selected); background: rgba(42, 96, 73, 0.1); }
-.toast-error   .toast-icon { color: var(--color-danger);   background: rgba(184, 50, 50, 0.1); }
-.toast-warning .toast-icon { color: var(--color-warning);  background: rgba(192, 122, 26, 0.1); }
-.toast-info    .toast-icon { color: var(--color-primary);  background: rgba(26, 58, 92, 0.1); }
+.toast-success .toast-icon { color: var(--color-selected); background: var(--color-selected-tint); }
+.toast-error   .toast-icon { color: var(--color-danger);   background: var(--color-danger-tint); }
+.toast-warning .toast-icon { color: var(--color-warning);  background: var(--color-warning-tint); }
+.toast-info    .toast-icon { color: var(--color-primary);  background: var(--color-primary-tint); }
 
 .toast-message {
   flex: 1;
@@ -1682,7 +1688,7 @@ kbd {
    ============================================ */
 .btn-loading {
   opacity: 0.65;
-  cursor: wait !important;
+  cursor: wait;
 }
 
 .spinner {

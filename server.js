@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 app.use((req, res, next) => {
     // CORS headers
     res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     
     // Security headers
@@ -33,7 +33,7 @@ const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
 const RATE_LIMIT_MAX_REQUESTS = 100; // Max requests per window
 
 // Rensa gamla poster från rateLimitMap för att undvika minnesläcka
-setInterval(() => {
+const cleanupInterval = setInterval(() => {
     const now = Date.now();
     for (const [ip, data] of rateLimitMap) {
         if (now > data.resetTime) {
@@ -42,8 +42,11 @@ setInterval(() => {
     }
 }, RATE_LIMIT_WINDOW);
 
+process.on('SIGTERM', () => clearInterval(cleanupInterval));
+process.on('SIGINT', () => clearInterval(cleanupInterval));
+
 app.use((req, res, next) => {
-    const clientIP = req.ip || req.connection.remoteAddress;
+    const clientIP = req.ip || req.socket.remoteAddress;
     const now = Date.now();
 
     if (!rateLimitMap.has(clientIP)) {
